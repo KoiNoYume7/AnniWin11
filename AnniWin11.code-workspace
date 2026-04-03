@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"name": "AnniWin11",
+			"path": "."
+		},
+		{
+			"name": "AnniWin11 (Backup)",
+			"path": "../AnniWin11.bak"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/.git": false
+		},
+		"workbench.startupEditor": "readme"
+	}
+}
