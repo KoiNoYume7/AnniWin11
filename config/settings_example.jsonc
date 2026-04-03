@@ -1,0 +1,78 @@
+{
+  // ----- DEVICE -----
+  // The name your PC will be renamed to. Must be a valid Windows computer name
+  // (max 15 chars, no spaces or special chars except hyphens).
+  "device_name": "MY-PC-01",
+
+  // Regional format / culture code. Examples: "en-CH", "en-GB", "de-CH", "en-US".
+  "region": "en-CH",
+
+  // Sound scheme. "none" = silent. Remove or set to any other value to keep current sounds.
+  "sound_scheme": "none",
+
+  // ----- APPEARANCE -----
+  // Windows theme. Valid values: "dark", "light".
+  "theme": "dark",
+
+  // Desktop wallpaper. Valid values: "solid_black" (more options may be added later).
+  "wallpaper": "solid_black",
+
+  // ----- TASKBAR -----
+  "taskbar": {
+    // Taskbar alignment. Valid values: "left", "centre".
+    "alignment": "left",
+
+    // Show search on taskbar. true = search icon visible, false = hidden.
+    "search": false,
+
+    // Show Task View button on taskbar.
+    "task_view": false,
+
+    // Show Widgets button on taskbar.
+    "widgets": false,
+
+    // Show seconds in the system clock.
+    "show_seconds": true,
+
+    // Show taskbar on all monitors in a multi-display setup.
+    "multi_monitor": false
+  },
+
+  // ----- EXPLORER -----
+  "explorer": {
+    // Open Explorer to "This PC" instead of "Quick Access".
+    "start_to_this_pc": true,
+
+    // Show file extensions in Explorer (e.g. .txt, .exe).
+    "show_extensions": true,
+
+    // Show hidden files and folders.
+    "show_hidden": true,
+
+    // Show protected operating system files (super hidden).
+    // WARNING: Enabling this makes system files visible. Do not delete them.
+    "show_super_hidden": true,
+
+    // Show desktop icons (Recycle Bin, This PC, etc.).
+    "desktop_icons": false
+  },
+
+  // ----- DEVELOPER -----
+  "developer": {
+    // Enable Windows Developer Mode (required for sideloading apps, WSL, etc.).
+    "dev_mode": true,
+
+    // Show "End Task" button in taskbar right-click context menu.
+    "end_task_button": true
+  },
+
+  // ----- TASKBAR PINNED APPS -----
+  // Array of absolute paths to executables or shortcuts to pin to the taskbar.
+  // These are applied by Pin-TaskbarApp.ps1 via LayoutModification.xml.
+  // Use full paths. If the file does not exist, it will be skipped with a warning.
+  "taskbar_apps": [
+    // "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+    // "C:\\Users\\YourUser\\AppData\\Local\\Discord\\Update.exe --processStart Discord.exe",
+    // "C:\\Program Files\\Microsoft VS Code\\Code.exe"
+  ]
+}

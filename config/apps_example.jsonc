@@ -1,0 +1,109 @@
+/*
+  Description:
+    List of applications to be installed via InstallApps.ps1.
+
+  Categories:
+    MainApps:       Apps which you usually want to install on every system.
+    AdditionalApps: Apps which you might want to install on some systems (choose which).
+    Tools:          Developer tools and utilities or apps without GUI.
+    Deprecated:     Apps which are no longer needed or used.
+
+  source:
+    winget:   Install via winget using the provided id.
+    internet: Download from the provided url.
+    local:    Install from a local path under "installers/" (include the installer file in the path).
+    terminal: Install via a terminal or powershell command.
+
+  Usage:
+    Run GenerateConfigs.ps1, or copy this file to config/apps.json and remove all comments.
+*/
+
+{
+  "MainApps": 
+  [
+    {"name": "Brave Browser", "source": "winget", "id": "Brave.Brave"},
+    {"name": "Spotify", "source": "winget", "id": "Spotify.Spotify"},
+    {"name": "Discord", "source": "winget", "id": "Discord.Discord"},
+    {"name": "VSCode", "source": "winget", "id": "Microsoft.VisualStudioCode"},
+    {"name": "VAC Control Panel", "source": "local", "path": "installers/Virtual-Audio-Cable-V4.70"},
+    {"name": "MIXLINE", "source": "winget", "id": "Logitech.MIXLINE"},
+    {"name": "SteelSeriesGG", "source": "winget", "id": "SteelSeries.GG"},
+    {"name": "HWiNFO", "source": "winget", "id": "REALiX.HWiNFO"},
+    {"name": "Intel DSA", "source": "winget", "id": "Intel.IntelDriverAndSupportAssistant"},
+    {"name": "NVIDIA App", "source": "internet", "url": "https://us.download.nvidia.com/nvapp/client/11.0.5.420/NVIDIA_app_v11.0.5.420.exe"},
+    {"name": "Swiftpoint", "source": "winget", "id": "Swiftpoint.X1ControlPanel"},
+    {"name": "HyperX NGenuity", "source": "winget", "id": "9P1TBXR6QDCX"},
+    {"name": "Logitech G Hub", "source": "winget", "id": "Logitech.GHUB"},
+    {"name": "Loupedeck", "source": "winget", "id": "Loupedeck.Loupedeck"},
+    {"name": "Obsidian", "source": "winget", "id": "Obsidian.Obsidian"},
+    {"name": "OBS", "source": "winget", "id": "OBSProject.OBSStudio"},
+    {"name": "Kdenlive", "source": "winget", "id": "KDE.Kdenlive"},
+    {"name": "Steam", "source": "winget", "id": "Valve.Steam"},
+    {"name": "EpicGames", "source": "winget", "id": "EpicGames.EpicGamesLauncher"},
+    {"name": "XXMI Launcher", "source": "winget", "id": "SpectrumQT.XXMILauncher"},
+    {"name": "RSI Launcher", "source": "winget", "id": "CloudImperiumGames.RSILauncher"},
+    {"name": "SmartSwitch", "source": "winget", "id": "Samsung.SmartSwitch"},
+    {"name": "Windows Media Player", "source": "winget", "id": "9WZDNCRFJ3PT"},
+    {"name": "Windhawk", "source": "winget", "id": "RamenSoftware.Windhawk"},
+    {"name": "ColorPicker", "source": "winget", "id": "Toinane.Colorpicker"}
+  ],
+
+  "AdditionalApps": 
+  [    
+    {"name": "Twinkle Tray", "source": "winget", "id": "xanderfrangos.twinkletray"},
+    {"name": "VDD", "source": "local", "path": "installers/VDD.Control.25.8.13"},
+    {"name": "OpenTrack", "source": "winget", "id": "opentrack.opentrack"},
+    {"name": "BeamEyeTracker", "source": "internet", "url": "https://accounts.eyeware.tech/"},
+    {"name": "Sonos", "source": "winget", "id": "Sonos.Controller"},
+    {"name": "WhatsApp", "source": "winget", "id": "9NKSQGP7F2NH"},
+    {"name": "Microsoft Office", "source": "winget", "id": "Microsoft.Office"},
+    {"name": "NVIDIA Control Panel", "source": "winget", "id": "9NF8H0H7WMLT"},
+    {"name": "Canon PRINT", "source": "winget", "id": "9PMK584KQVC2"},
+    {"name": "GIMP", "source": "winget", "id": "GIMP.GIMP"},
+    {"name": "Docker Desktop", "source": "winget", "id": "Docker.DockerDesktop"},
+    {"name": "balena Etcher", "source": "winget", "id": "Balena.Etcher"},
+    {"name": "Vortex", "source": "winget", "id": "NexusMods.Vortex"},
+    {"name": "Windows Notepad", "source": "winget", "id": "9MSMLRH6LZF3"},
+    {"name": "Windows Clock", "source": "winget", "id": "9WZDNCRFJ3PR"},
+    {"name": "Windows Terminal", "source": "winget", "id": "9N0DX20HK701"}
+  ],
+
+  "Tools": 
+  [
+    {"name": "Tailscale", "source": "winget", "id": "Tailscale.Tailscale"},
+    {"name": "Gemini-cli", "source": "terminal", "command": "npm install -g @google/gemini-cli"},
+    {"name": "rustdesk", "source": "winget", "id": "RustDesk.RustDesk"},
+    {"name": "TranslucentTB", "source": "winget", "id": "CharlesMilette.TranslucentTB"},
+    {"name": "SuperF4", "source": "winget", "id": "StefanSundin.Superf4"},
+    {"name": "Git", "source": "winget", "id": "Git.Git"},
+    {"name": "rustup", "source": "winget", "id": "Rustlang.Rustup"},
+    {"name": "CMake", "source": "winget", "id": "Kitware.CMake"},
+    {"name": "FFmpeg", "source": "winget", "id": "Gyan.FFmpeg"},
+    {"name": "Rufus", "source": "winget", "id": "Rufus.Rufus"},
+    {"name": "AHK", "source": "winget", "id": "AutoHotkey.AutoHotkey"},
+    {"name": "7zip", "source": "winget", "id": "7zip.7zip"},
+    {"name": "WizTree", "source": "winget", "id": "AntibodySoftware.WizTree"},
+    {"name": "Raspberry Pi Imager", "source": "winget", "id": "RaspberryPiFoundation.RaspberryPiImager"},
+    {"name": "Visual Studio build tools", "source": "winget", "id": "Microsoft.VisualStudio.2022.BuildTools"},
+    {"name": ".NET Desktop Runtime", "source": "winget", "id": "Microsoft.DotNet.DesktopRuntime.8"},
+    {"name": "Winget Create", "source": "winget", "id": "Microsoft.WingetCreate"},
+    {"name": "Python", "source": "winget", "id": "Python.Python.3.13"},
+    {"name": "NodeJS LTS", "source": "winget", "id": "OpenJS.NodeJS.LTS"},
+    {"name": "Canon drivers", "source": "winget", "id": "Canon.GPCL6_V4_PrinterDriver_V21.00"},
+    {"name": "Neofetch", "source": "winget", "id": "nepnep.neofetch-win"}
+  ],
+
+  "Deprecated":
+  [
+    {"name": "FanControl", "source": "winget", "id": "Rem0o.FanControl"},                                 // Current motherboard does not support it
+    {"name": "NordVPN", "source": "winget", "id": "NordVPN.NordVPN"},                                     // Replaced by Tailscale
+    {"name": "Firefox", "source": "winget", "id": "Mozilla.Firefox"},                                     // Replaced by Opera/Opera GX
+    {"name": "Opera", "source": "winget", "id": "Opera.Opera"},                                           // Replaced by Brave
+    {"name": "Opera GX", "source": "winget", "id": "Opera.OperaGX"},                                      // Replaced by Brave
+    {"name": "NVIDIA GeForce Experience", "source": "winget", "id": "Nvidia.GeForceNow"},                 // Got a good PC now
+    {"name": "All-In-One Messenger", "source": "winget", "id": "HenrikWenz.All-in-OneMessenger"},         // Not fitted for my needs
+
+    {"name": "PowerShell", "source": "winget", "id": "Microsoft.PowerShell"},                             // Implemented in setup.bat
+    {"name": "Powershell 7.5.4", "source": "local", "path": "installers/PowerShell-7.5.4-win-x64.msi"}    // Redundant to above
+  ]
+}

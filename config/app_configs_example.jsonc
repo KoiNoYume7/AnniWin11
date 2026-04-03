@@ -1,0 +1,160 @@
+{
+  // Maps each application to its config file locations for backup and restore.
+  //
+  // Path types:
+  //   "appdata"         -> %APPDATA%          (C:\Users\X\AppData\Roaming)
+  //   "appdata_roaming" -> %APPDATA%          (alias for appdata)
+  //   "localappdata"    -> %LOCALAPPDATA%     (C:\Users\X\AppData\Local)
+  //   "programdata"     -> %PROGRAMDATA%      (C:\ProgramData)
+  //   "absolute"        -> literal path, used as-is
+  //
+  // Each entry has:
+  //   "name"         - Display name (must match the app name in apps.json for clarity)
+  //   "backup_paths" - Array of objects with "type" and "path"
+  //   "notes"        - Optional human-readable note about backup behaviour
+  //
+  // IMPORTANT: Browser saved passwords and session cookies use Windows DPAPI
+  // encryption, which is tied to the machine and Windows installation. These
+  // CANNOT be restored across reinstalls. Use a password manager instead.
+
+  "apps": [
+    // ----- Browsers -----
+    {
+      "name": "Brave Browser",
+      "backup_paths": [
+        { "type": "localappdata", "path": "BraveSoftware\\Brave-Browser\\User Data\\Default\\Bookmarks" },
+        { "type": "localappdata", "path": "BraveSoftware\\Brave-Browser\\User Data\\Default\\Preferences" },
+        { "type": "localappdata", "path": "BraveSoftware\\Brave-Browser\\User Data\\Default\\Extensions" },
+        { "type": "localappdata", "path": "BraveSoftware\\Brave-Browser\\User Data\\Default\\Secure Preferences" }
+      ],
+      // DPAPI WARNING: Saved passwords and login sessions CANNOT be restored
+      // across reinstalls. Bookmarks, extensions, and preferences CAN be restored.
+      "notes": "Passwords use DPAPI -- not restorable across reinstalls. Use a password manager."
+    },
+
+    // ----- Communication -----
+    {
+      "name": "Discord",
+      "backup_paths": [
+        { "type": "appdata", "path": "discord\\settings.json" },
+        { "type": "appdata", "path": "discord\\user-settings" }
+      ],
+      "notes": "Login session is not restorable. User must re-login after reinstall."
+    },
+
+    // ----- Development -----
+    {
+      "name": "VSCode",
+      "backup_paths": [
+        { "type": "appdata", "path": "Code\\User\\settings.json" },
+        { "type": "appdata", "path": "Code\\User\\keybindings.json" },
+        { "type": "appdata", "path": "Code\\User\\snippets" },
+        { "type": "appdata", "path": "Code\\User\\globalStorage\\state.vscdb" }
+      ],
+      "notes": "Extensions are reinstalled separately via 'code --install-extension'. Wallpaper extensions settings are captured here."
+    },
+    {
+      "name": "Git",
+      "backup_paths": [
+        { "type": "absolute", "path": "%USERPROFILE%\\.gitconfig" },
+        { "type": "absolute", "path": "%USERPROFILE%\\.gitignore_global" }
+      ],
+      "notes": "Global git config and global gitignore."
+    },
+
+    // ----- Media / Creative -----
+    {
+      "name": "OBS",
+      "backup_paths": [
+        { "type": "appdata", "path": "obs-studio" }
+      ],
+      "notes": "Full OBS profile, scenes, and plugin configs."
+    },
+    {
+      "name": "Kdenlive",
+      "backup_paths": [
+        { "type": "appdata", "path": "kdenlive" }
+      ]
+    },
+    {
+      "name": "Spotify",
+      "backup_paths": [
+        { "type": "appdata", "path": "Spotify\\prefs" }
+      ],
+      "notes": "Preferences only. Playlists are cloud-synced. User must re-login."
+    },
+
+    // ----- Productivity -----
+    {
+      "name": "Obsidian",
+      "backup_paths": [
+        { "type": "appdata", "path": "obsidian\\obsidian.json" }
+      ],
+      "notes": "App-level config only. Vault configs (.obsidian/) live inside each vault folder and should be backed up separately or kept on a non-C: drive."
+    },
+
+    // ----- Hardware / Peripherals -----
+    {
+      "name": "SteelSeriesGG",
+      "backup_paths": [
+        { "type": "appdata", "path": "SteelSeries\\GG" }
+      ],
+      "notes": "GG software must be reinstalled first (kernel driver). Config drop-in after install restores Sonar routing."
+    },
+    {
+      "name": "Logitech G Hub",
+      "backup_paths": [
+        { "type": "localappdata", "path": "LGHUB\\settings.db" },
+        { "type": "localappdata", "path": "LGHUB\\current_user.json" }
+      ],
+      "notes": "Requires full reinstall (kernel driver). Config restore may reset some macro bindings."
+    },
+    {
+      "name": "Loupedeck",
+      "backup_paths": [
+        { "type": "localappdata", "path": "Loupedeck\\Loupedeck2" }
+      ]
+    },
+    {
+      "name": "HWiNFO",
+      "backup_paths": [
+        { "type": "appdata", "path": "HWiNFO64" }
+      ]
+    },
+
+    // ----- Gaming -----
+    {
+      "name": "Steam",
+      "backup_paths": [
+        { "type": "absolute", "path": "C:\\Program Files (x86)\\Steam\\config\\loginusers.vdf" },
+        { "type": "absolute", "path": "C:\\Program Files (x86)\\Steam\\config\\config.vdf" }
+      ],
+      "notes": "Game library preserved by keeping steamapps on non-C: drive. Only login token and client config backed up."
+    },
+
+    // ----- Utilities -----
+    {
+      "name": "Tailscale",
+      "backup_paths": [],
+      "notes": "Auth is cloud-based. No local config to back up. User re-authenticates after reinstall."
+    },
+    {
+      "name": "TranslucentTB",
+      "backup_paths": [
+        { "type": "appdata", "path": "TranslucentTB\\settings.json" }
+      ]
+    },
+    {
+      "name": "Windhawk",
+      "backup_paths": [
+        { "type": "appdata", "path": "Windhawk" }
+      ],
+      "notes": "Mods and settings. Windhawk must be reinstalled first."
+    },
+    {
+      "name": "AHK",
+      "backup_paths": [],
+      "notes": "AutoHotkey scripts are user-managed files. Back them up manually or keep on a non-C: drive."
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+# Enforce consistent line endings across platforms
+# Without this, contributors on Linux/Mac can silently corrupt .ps1 and .bat files
+
+# Windows scripts -- must be CRLF or they break
+*.ps1       text eol=crlf
+*.psm1      text eol=crlf
+*.psd1      text eol=crlf
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+
+# Text files -- LF normalised
+*.md        text eol=lf
+*.json      text eol=lf
+*.jsonc     text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.txt       text eol=lf
+*.xml       text eol=lf
+
+# Binary files -- no line ending conversion
+*.png       binary
+*.ico       binary
+*.exe       binary
+*.msi       binary

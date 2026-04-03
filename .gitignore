@@ -1,0 +1,15 @@
+# Auto-generated config files (user-specific, not committed)
+config/*.json
+
+# Keep example configs committed
+!config/*_example.jsonc
+
+# Local installers (large binaries, user-provided)
+config/installers/
+
+# Log files (auto-created at runtime)
+logs/
+
+# Dev task list (personal, not committed)
+TODO.md
+PROMPT.md
