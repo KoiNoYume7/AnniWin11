@@ -7,6 +7,43 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.1.1] - 2026-04-04
+
+Patch release. Post-test bug fixes, new DetectApps features, and documentation updates.
+
+### Fixed
+
+- **`lib/Config.ps1`** -- `Resolve-BackupPath` now expands environment variables in
+  `absolute` paths (e.g. `%USERPROFILE%`) before returning. Previously these were stored
+  and restored as literal strings.
+- **`src/BackupConfigs.ps1`** -- Robocopy calls now quote source and destination paths,
+  fixing silent failures for any app config path containing spaces (e.g. Brave's
+  `User Data\Default\Extensions`).
+- **`src/BackupConfigs.ps1`** -- Winget export no longer floods the console with
+  "not available from any source" noise. Count is logged at DEBUG level only.
+- **`src/WinSettings.ps1`** -- Widgets button now uses a two-method approach with
+  fallback. Note: this fix is partially working -- see Known Issues.
+- **`src/DetectApps.ps1`** -- Winget output parser rewritten with regex-based approach.
+  Previous column-position parser failed entirely on real winget output.
+- **`src/DetectApps.ps1`** -- App ID comparison is now case-insensitive.
+
+### Added
+
+- **`src/DetectApps.ps1`** -- Permanent ignore list. Apps ignored via `[I]` during
+  detection are saved to `config/ignored_apps.json` and never shown again.
+- **`src/DetectApps.ps1`** -- Source auto-tagging. Detected apps are tagged `winget`,
+  `msstore`, or `manual` based on the Source column in `winget list` output. Manual
+  installs receive a descriptive note (e.g. "Installed via Steam").
+
+### Known Issues
+
+- **`src/WinSettings.ps1`** -- Widgets button (`TaskbarDa`) may still throw an
+  "unauthorized operation" error on some Windows 11 builds. Deferred to v0.2.0.
+- **`src/DriveSetup.ps1`** -- Drive detection fails in Windows Sandbox due to volume
+  filter restrictions. Deferred to v0.2.0.
+
+---
+
 ## [v0.1.0] - 2026-04-03
 
 Initial alpha release. Full project scaffolding, all planned scripts, config system, and orchestration.
@@ -56,3 +93,10 @@ Initial alpha release. Full project scaffolding, all planned scripts, config sys
 ### Removed
 
 - **`lib/LogoASCII.ps1`** -- Superseded by `lib/AnniLogo.psm1`
+
+### Known Issues (resolved in v0.1.1)
+
+- Robocopy fails for paths containing spaces
+- Winget export floods console with noise output
+- DetectApps parser fails entirely on real winget output
+- `%USERPROFILE%` not expanded in absolute backup paths

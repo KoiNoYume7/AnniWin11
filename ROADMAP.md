@@ -30,13 +30,32 @@ All planned phases delivered in a single release:
 - [x] Built `setup.bat` (UAC elevation, PS7 bootstrap)
 - [x] Built `src/Main.ps1` (interactive menu orchestrator)
 
-## Next Steps
+## v0.1.1 -- Patch Release (completed 2026-04-04)
 
-- [ ] End-to-end testing on a clean Windows 11 install
-- [ ] Expand `app_configs_example.jsonc` with more app config paths
-- [ ] Improve `DetectApps.ps1` winget output parsing robustness
-- [ ] Add `--force` / override flag to `RestoreConfigs.ps1`
-- [ ] Add VSCode extension backup/restore support to config mapping
+Post-test bug fixes and DetectApps improvements.
+
+- [x] Fixed robocopy space-in-path bug (`BackupConfigs.ps1`, `RestoreConfigs.ps1`)
+- [x] Suppressed winget export console noise (`BackupConfigs.ps1`)
+- [x] Rewrote winget output parser with regex approach (`DetectApps.ps1`)
+- [x] Fixed case-insensitive app ID comparison (`DetectApps.ps1`)
+- [x] Added permanent ignore list to `DetectApps.ps1` (`config/ignored_apps.json`)
+- [x] Added source auto-tagging to `DetectApps.ps1` (winget / msstore / manual)
+- [x] Fixed `%USERPROFILE%` expansion in `Config.ps1` absolute paths
+- [x] Updated documentation (CHANGELOG, ROADMAP)
+
+## v0.2.0 -- Stability & UX (planned)
+
+Focus: fix remaining known issues, improve first-run experience, full clean-install test.
+
+- [ ] Fix Widgets button registry key (`WinSettings.ps1`) -- unauthorized error on some builds
+- [ ] Fix `DriveSetup.ps1` drive detection in Windows Sandbox
+- [ ] Improve `GenerateConfigs.ps1` -- walk user through apps and app_configs interactively
+  instead of just copying the example files
+- [ ] Populate `app_configs_example.jsonc` with verified paths for remaining apps
+  (SteelSeries Sonar, Loupedeck, HWiNFO, Windhawk, TranslucentTB)
+- [ ] Full clean-install test in Windows Sandbox
+- [ ] Add `--force` override flag to `RestoreConfigs.ps1`
+- [ ] VSCode extension backup/restore support
 
 ---
 

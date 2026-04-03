@@ -6,7 +6,11 @@ A PowerShell-based Windows 11 post-install automation suite. Install apps, apply
 
 ## Status
 
-**Alpha** -- this project is under active development. See [ROADMAP.md](ROADMAP.md) for progress and [CHANGELOG.md](CHANGELOG.md) for version history.
+**Alpha (v0.1.1)** -- this project is under active development.
+See [ROADMAP.md](ROADMAP.md) for progress and [CHANGELOG.md](CHANGELOG.md) for version history.
+
+> **Known issues:** The Widgets taskbar button setting may fail on some Windows 11 builds.
+> See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 

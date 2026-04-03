@@ -146,7 +146,7 @@ function Resolve-BackupPath {
           appdata_roaming -> %APPDATA%           (alias for appdata)
           localappdata    -> %LOCALAPPDATA%      (e.g. C:\Users\X\AppData\Local)
           programdata     -> %PROGRAMDATA%       (e.g. C:\ProgramData)
-          absolute        -> literal path as-is
+          absolute        -> literal path with environment variables expanded (e.g. %USERPROFILE%)
     .PARAMETER PathType
         One of: appdata, appdata_roaming, localappdata, programdata, absolute.
     .PARAMETER RelativePath
@@ -167,7 +167,7 @@ function Resolve-BackupPath {
         "appdata_roaming" { return Join-Path $env:APPDATA $RelativePath }
         "localappdata"    { return Join-Path $env:LOCALAPPDATA $RelativePath }
         "programdata"     { return Join-Path $env:PROGRAMDATA $RelativePath }
-        "absolute"        { return $RelativePath }
+        "absolute"        { return [System.Environment]::ExpandEnvironmentVariables($RelativePath) }
         default           { throw "Unknown path type: $PathType" }
     }
 }
