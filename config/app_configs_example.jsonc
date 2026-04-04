@@ -1,24 +1,40 @@
 {
-  // Maps each application to its config file locations for backup and restore.
+  // Community lookup table: maps applications to their config file locations
+  // for backup and restore. This file serves as the primary reference for
+  // AnniWin11's config backup system.
   //
   // Path types:
   //   "appdata"         -> %APPDATA%          (C:\Users\X\AppData\Roaming)
   //   "appdata_roaming" -> %APPDATA%          (alias for appdata)
   //   "localappdata"    -> %LOCALAPPDATA%     (C:\Users\X\AppData\Local)
   //   "programdata"     -> %PROGRAMDATA%      (C:\ProgramData)
-  //   "absolute"        -> literal path, used as-is
+  //   "absolute"        -> literal path with environment variable expansion
+  //                        (e.g. %USERPROFILE%\.gitconfig)
   //
   // Each entry has:
-  //   "name"         - Display name (must match the app name in apps.json for clarity)
+  //   "name"         - Display name (should match the app name in apps.json)
   //   "backup_paths" - Array of objects with "type" and "path"
-  //   "notes"        - Optional human-readable note about backup behaviour
+  //   "notes"        - Human-readable note about backup behaviour
   //
   // IMPORTANT: Browser saved passwords and session cookies use Windows DPAPI
   // encryption, which is tied to the machine and Windows installation. These
   // CANNOT be restored across reinstalls. Use a password manager instead.
+  //
+  // CONTRIBUTING: To add a new app, include at minimum the name, one verified
+  // backup_paths entry, and a notes field. See CONTRIBUTING.md for details.
+
+  // IMPORTANT: IN THIS CURRENT VERSION SOME PATHS ARE **NOT** VERIFIED!
+  // If you are contributing, please verify the paths & update the notes field.
 
   "apps": [
-    // ----- Browsers -----
+
+    // =====================================================================
+    // BROWSERS
+    // =====================================================================
+    // DPAPI WARNING applies to all Chromium-based browsers: saved passwords,
+    // login sessions, and cookies CANNOT be restored across reinstalls.
+    // Bookmarks, extensions, and preferences CAN be restored.
+
     {
       "name": "Brave Browser",
       "backup_paths": [
@@ -27,22 +43,66 @@
         { "type": "localappdata", "path": "BraveSoftware\\Brave-Browser\\User Data\\Default\\Extensions" },
         { "type": "localappdata", "path": "BraveSoftware\\Brave-Browser\\User Data\\Default\\Secure Preferences" }
       ],
-      // DPAPI WARNING: Saved passwords and login sessions CANNOT be restored
-      // across reinstalls. Bookmarks, extensions, and preferences CAN be restored.
-      "notes": "Passwords use DPAPI -- not restorable across reinstalls. Use a password manager."
+      "notes": "DPAPI: passwords not restorable. Bookmarks, extensions, preferences are safe."
+    },
+    {
+      "name": "Google Chrome",
+      "backup_paths": [
+        { "type": "localappdata", "path": "Google\\Chrome\\User Data\\Default\\Bookmarks" },
+        { "type": "localappdata", "path": "Google\\Chrome\\User Data\\Default\\Preferences" },
+        { "type": "localappdata", "path": "Google\\Chrome\\User Data\\Default\\Extensions" },
+        { "type": "localappdata", "path": "Google\\Chrome\\User Data\\Default\\Secure Preferences" }
+      ],
+      "notes": "DPAPI: passwords not restorable. Bookmarks, extensions, preferences are safe."
+    },
+    {
+      "name": "Firefox",
+      "backup_paths": [
+        { "type": "appdata", "path": "Mozilla\\Firefox\\Profiles" }
+      ],
+      "notes": "Entire profile folder. Passwords use Firefox's own encryption (not DPAPI) but are still tied to the profile key. Use Firefox Sync or a password manager."
+    },
+    {
+      "name": "Microsoft Edge",
+      "backup_paths": [
+        { "type": "localappdata", "path": "Microsoft\\Edge\\User Data\\Default\\Bookmarks" },
+        { "type": "localappdata", "path": "Microsoft\\Edge\\User Data\\Default\\Preferences" },
+        { "type": "localappdata", "path": "Microsoft\\Edge\\User Data\\Default\\Extensions" }
+      ],
+      "notes": "DPAPI: passwords not restorable. Bookmarks, extensions, preferences are safe. Edge is pre-installed on Windows 11."
     },
 
-    // ----- Communication -----
+    // =====================================================================
+    // COMMUNICATION
+    // =====================================================================
+
     {
       "name": "Discord",
       "backup_paths": [
         { "type": "appdata", "path": "discord\\settings.json" },
         { "type": "appdata", "path": "discord\\user-settings" }
       ],
-      "notes": "Login session is not restorable. User must re-login after reinstall."
+      "notes": "Login session not restorable. User must re-login after reinstall."
+    },
+    {
+      "name": "Slack",
+      "backup_paths": [
+        { "type": "appdata", "path": "Slack\\storage" }
+      ],
+      "notes": "Local preferences only. Workspaces and messages are cloud-synced. User must re-login."
+    },
+    {
+      "name": "Microsoft Teams",
+      "backup_paths": [
+        { "type": "localappdata", "path": "Packages\\MSTeams_8wekyb3d8bbwe\\LocalCache\\Microsoft\\MSTeams\\app_settings.json" }
+      ],
+      "notes": "New Teams (v2) is an MSIX app. Auth is cloud-based. Only local app settings backed up."
     },
 
-    // ----- Development -----
+    // =====================================================================
+    // DEVELOPMENT
+    // =====================================================================
+
     {
       "name": "VSCode",
       "backup_paths": [
@@ -51,7 +111,16 @@
         { "type": "appdata", "path": "Code\\User\\snippets" },
         { "type": "appdata", "path": "Code\\User\\globalStorage\\state.vscdb" }
       ],
-      "notes": "Extensions are reinstalled separately via 'code --install-extension'. Wallpaper extensions settings are captured here."
+      "notes": "Extensions reinstalled separately via 'code --install-extension'. Settings Sync is the recommended alternative."
+    },
+    {
+      "name": "Windsurf",
+      "backup_paths": [
+        { "type": "appdata", "path": "Windsurf\\User\\settings.json" },
+        { "type": "appdata", "path": "Windsurf\\User\\keybindings.json" },
+        { "type": "appdata", "path": "Windsurf\\User\\snippets" }
+      ],
+      "notes": "VSCode-based editor. Extensions and AI settings may need manual reconfiguration."
     },
     {
       "name": "Git",
@@ -61,8 +130,25 @@
       ],
       "notes": "Global git config and global gitignore."
     },
+    {
+      "name": "GitHub Desktop",
+      "backup_paths": [
+        { "type": "appdata", "path": "GitHub Desktop\\config.json" }
+      ],
+      "notes": "Auth token not restorable. User must re-login via browser after reinstall."
+    },
+    {
+      "name": "Windows Terminal",
+      "backup_paths": [
+        { "type": "localappdata", "path": "Packages\\Microsoft.WindowsTerminal_8wekyb3d8bbwe\\LocalState\\settings.json" }
+      ],
+      "notes": "MSIX app. Profiles, colour schemes, and keybindings."
+    },
 
-    // ----- Media / Creative -----
+    // =====================================================================
+    // MEDIA / CREATIVE
+    // =====================================================================
+
     {
       "name": "OBS",
       "backup_paths": [
@@ -74,7 +160,15 @@
       "name": "Kdenlive",
       "backup_paths": [
         { "type": "appdata", "path": "kdenlive" }
-      ]
+      ],
+      "notes": "Project files are stored separately. This backs up app preferences only."
+    },
+    {
+      "name": "Audacity",
+      "backup_paths": [
+        { "type": "appdata", "path": "audacity\\audacity.cfg" }
+      ],
+      "notes": "App preferences. Project files (.aup3) are stored separately."
     },
     {
       "name": "Spotify",
@@ -84,22 +178,37 @@
       "notes": "Preferences only. Playlists are cloud-synced. User must re-login."
     },
 
-    // ----- Productivity -----
+    // =====================================================================
+    // PRODUCTIVITY
+    // =====================================================================
+
     {
       "name": "Obsidian",
       "backup_paths": [
         { "type": "appdata", "path": "obsidian\\obsidian.json" }
       ],
-      "notes": "App-level config only. Vault configs (.obsidian/) live inside each vault folder and should be backed up separately or kept on a non-C: drive."
+      "notes": "App-level config only. Vault configs (.obsidian/) live inside each vault folder -- back up vaults separately or keep on a non-C: drive."
+    },
+    {
+      "name": "PowerToys",
+      "backup_paths": [
+        { "type": "localappdata", "path": "Microsoft\\PowerToys" }
+      ],
+      "notes": "All PowerToys module settings. PowerToys must be reinstalled first."
     },
 
-    // ----- Hardware / Peripherals -----
+    // =====================================================================
+    // HARDWARE / PERIPHERALS
+    // =====================================================================
+    // Most peripheral software requires reinstallation before config restore
+    // due to kernel drivers. Restore config AFTER reinstalling the software.
+
     {
       "name": "SteelSeriesGG",
       "backup_paths": [
         { "type": "appdata", "path": "SteelSeries\\GG" }
       ],
-      "notes": "GG software must be reinstalled first (kernel driver). Config drop-in after install restores Sonar routing."
+      "notes": "Reinstall first (kernel driver). Config restore brings back Sonar routing and device profiles."
     },
     {
       "name": "Logitech G Hub",
@@ -107,32 +216,68 @@
         { "type": "localappdata", "path": "LGHUB\\settings.db" },
         { "type": "localappdata", "path": "LGHUB\\current_user.json" }
       ],
-      "notes": "Requires full reinstall (kernel driver). Config restore may reset some macro bindings."
+      "notes": "Reinstall first (kernel driver). Config restore may reset some macro bindings."
+    },
+    {
+      "name": "Razer Synapse",
+      "backup_paths": [
+        { "type": "localappdata", "path": "Razer\\Synapse3\\UserData" }
+      ],
+      "notes": "Reinstall first. Cloud sync is available via Razer account but local backup catches offline profiles."
+    },
+    {
+      "name": "Corsair iCUE",
+      "backup_paths": [
+        { "type": "appdata", "path": "Corsair\\CUE" }
+      ],
+      "notes": "Reinstall first (kernel driver). Profiles and lighting effects."
     },
     {
       "name": "Loupedeck",
       "backup_paths": [
         { "type": "localappdata", "path": "Loupedeck\\Loupedeck2" }
-      ]
+      ],
+      "notes": "Reinstall first. Custom profiles and action mappings."
+    },
+    {
+      "name": "Elgato Stream Deck",
+      "backup_paths": [
+        { "type": "appdata", "path": "Elgato\\StreamDeck" }
+      ],
+      "notes": "Reinstall first. Profiles, icons, and plugin configs. Export/import via Stream Deck software is also available."
     },
     {
       "name": "HWiNFO",
       "backup_paths": [
         { "type": "appdata", "path": "HWiNFO64" }
-      ]
+      ],
+      "notes": "Sensor layout, monitoring settings, and custom alerts."
     },
 
-    // ----- Gaming -----
+    // =====================================================================
+    // GAMING
+    // =====================================================================
+
     {
       "name": "Steam",
       "backup_paths": [
         { "type": "absolute", "path": "C:\\Program Files (x86)\\Steam\\config\\loginusers.vdf" },
         { "type": "absolute", "path": "C:\\Program Files (x86)\\Steam\\config\\config.vdf" }
       ],
-      "notes": "Game library preserved by keeping steamapps on non-C: drive. Only login token and client config backed up."
+      "notes": "Login token and client config only. Keep steamapps on a non-C: drive to preserve game library across reinstalls."
+    },
+    {
+      "name": "EpicGames",
+      "backup_paths": [
+        { "type": "localappdata", "path": "EpicGamesLauncher\\Saved\\Config\\Windows" }
+      ],
+      "notes": "Launcher settings only. Games are managed by Epic. User must re-login."
     },
 
-    // ----- Utilities -----
+    // =====================================================================
+    // UTILITIES
+    // =====================================================================
+
     {
       "name": "Tailscale",
       "backup_paths": [],
@@ -142,7 +287,8 @@
       "name": "TranslucentTB",
       "backup_paths": [
         { "type": "appdata", "path": "TranslucentTB\\settings.json" }
-      ]
+      ],
+      "notes": "Taskbar transparency settings."
     },
     {
       "name": "Windhawk",

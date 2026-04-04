@@ -1,7 +1,12 @@
 # Roadmap
 
 High-level milestone plan for AnniWin11.
-All v0.x.0 releases are alpha / pre-release.
+
+**Versioning:** [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All v0.x releases are alpha (unstable, API may change).
+v1.0.0 is the first stable public release.
+
+For the full long-term vision, see [docs/VISION.md](docs/VISION.md).
 
 ---
 
@@ -30,6 +35,8 @@ All planned phases delivered in a single release:
 - [x] Built `setup.bat` (UAC elevation, PS7 bootstrap)
 - [x] Built `src/Main.ps1` (interactive menu orchestrator)
 
+---
+
 ## v0.1.1 -- Patch Release (completed 2026-04-04)
 
 Post-test bug fixes and DetectApps improvements.
@@ -43,25 +50,162 @@ Post-test bug fixes and DetectApps improvements.
 - [x] Fixed `%USERPROFILE%` expansion in `Config.ps1` absolute paths
 - [x] Updated documentation (CHANGELOG, ROADMAP)
 
-## v0.2.0 -- Stability & UX (planned)
+---
 
-Focus: fix remaining known issues, improve first-run experience, full clean-install test.
+## v0.1.2 -- Docs & Public Configs (completed 2026-04-04)
 
-- [ ] Fix Widgets button registry key (`WinSettings.ps1`) -- unauthorized error on some builds
-- [ ] Fix `DriveSetup.ps1` drive detection in Windows Sandbox
-- [ ] Improve `GenerateConfigs.ps1` -- walk user through apps and app_configs interactively
-  instead of just copying the example files
-- [ ] Populate `app_configs_example.jsonc` with verified paths for remaining apps
-  (SteelSeries Sonar, Loupedeck, HWiNFO, Windhawk, TranslucentTB)
-- [ ] Full clean-install test in Windows Sandbox
-- [ ] Add `--force` override flag to `RestoreConfigs.ps1`
-- [ ] VSCode extension backup/restore support
+Documentation overhaul and example config cleanup for public audience.
+
+- [x] Rebuilt `config/apps_example.jsonc` -- removed personal/niche apps, added broadly useful apps
+- [x] Expanded `config/app_configs_example.jsonc` as community lookup table (30+ apps)
+- [x] Full rewrite of `README.md` as public-facing landing page
+- [x] Full rewrite of `ROADMAP.md` with incremental milestones through v1.0.0
+- [x] Created `docs/VISION.md` -- public-facing long-term architecture spec
+- [x] Updated `docs/ARCHITECTURE.md` with planned components and security model
+- [x] Updated `CONTRIBUTING.md` with community lookup table and security sections
 
 ---
 
-## Future
+## v0.2.0 -- Stability & Foundation (planned)
 
-- GUI interface (planned but not yet scoped)
-- Additional app config mappings contributed by community
-- Potential plugin system for custom post-install steps
-- Cross-session backup verification (checksum comparison)
+Focus: fix all known bugs, add project-level config infrastructure, validate on clean install.
+
+- [ ] Fix Widgets button registry key (`WinSettings.ps1`) -- unauthorised error on some builds
+- [ ] Fix `DriveSetup.ps1` drive detection in Windows Sandbox
+- [ ] Add `config/project_config.json` infrastructure to `Config.ps1`
+  - `max_config_folder_mb`, `auto_confirm_fuzzy`, `log_level`,
+    `check_updates_on_backup`, `suppress_c_drive_warning`
+- [ ] Create `config/project_config_example.jsonc` template
+- [ ] Update `.gitignore` to include `config/project_config.json`
+- [ ] Full clean-install test in Windows Sandbox
+- [ ] Add `--force` override flag to `RestoreConfigs.ps1`
+
+---
+
+## v0.3.0 -- DriveSetup Rewrite (planned)
+
+Focus: fix drive detection bugs, add USB/flash support, improve safety warnings.
+
+- [ ] Detect all drive types: Fixed, Removable (USB/flash), and Network
+- [ ] Fix partition detection (use `Get-Partition` + `Get-Volume` together)
+- [ ] Show and allow selection of USB/flash drives
+- [ ] C: drive warning when user selects a path on the system disk
+- [ ] General reinstall warning after any drive selection
+- [ ] Carry over partition creation (shrink C:) with detection fix
+
+---
+
+## v0.4.0 -- Smart App Detection (planned)
+
+Focus: new dual-scan app detection engine replacing `DetectApps.ps1`.
+
+- [ ] Build `src/ScanApps.ps1` with two scan sources:
+  - Source 1: `winget list` (carry over regex parser from DetectApps)
+  - Source 2: Start Menu shortcut scan (`.lnk` resolution via COM)
+- [ ] Cross-reference and deduplicate results (prefer winget entry when both match)
+- [ ] Filter out Windows system components, uninstallers, web shortcuts
+- [ ] Unified output format: name, source, executable path, install directory, notes
+
+---
+
+## v0.5.0 -- Config Discovery (planned)
+
+Focus: automated config path discovery engine.
+
+- [ ] Build `src/ScanConfigs.ps1` with three-tier approach:
+  - Tier 1: Community lookup table (`app_configs_example.jsonc`)
+  - Tier 2: Fuzzy AppData scan (name matching with size/exclusion filters)
+  - Tier 3: Install directory scan (config file patterns)
+- [ ] Interactive confirmation flow for fuzzy matches
+- [ ] Security rules: never suggest private keys, browser profile roots, System32,
+  or symlink targets
+- [ ] Audit logging of all skipped candidates at DEBUG level
+
+---
+
+## v0.6.0 -- GenerateConfigs Rewrite (planned)
+
+Focus: orchestrate the full detection pipeline to produce all config files.
+
+- [ ] Rewrite `src/GenerateConfigs.ps1` to orchestrate ScanApps + ScanConfigs
+- [ ] Flow: detect apps -> categorise -> scan configs -> confirm -> write
+- [ ] App categorisation: MainApps / AdditionalApps / Tools / Ignore
+- [ ] Incremental progress saving (resume after interruption)
+- [ ] Never silently overwrite existing configs -- always ask first
+- [ ] Steps 2-4 (apps) and 5-7 (configs) runnable independently from main menu
+
+---
+
+## v0.7.0 -- Backup & Restore v2 (planned)
+
+Focus: improved backup/restore flows with integrity checks and config file backup.
+
+- [ ] Back up config files (apps.json, settings.json, app_configs.json) alongside app data
+- [ ] Check available space before backup, warn if < 20% free
+- [ ] SHA256 checksum for each backed-up file in `backup_manifest.json`
+- [ ] Verify checksums on restore, warn on mismatch
+- [ ] New restore flow: validate manifest, show summary, prominent warnings, confirm
+- [ ] Offer to run InstallApps and WinSettings from backup if configs present
+- [ ] Warn if backup destination is on C: or same physical disk
+
+---
+
+## v0.8.0 -- Menu & UX Polish (planned)
+
+Focus: updated menu structure, smarter backup flow, WinSettings improvements.
+
+- [ ] Update `src/Main.ps1` menu:
+  ```
+  [1] First-time setup
+  [2] Backup
+  [3] Restore
+  [4] Backup, wipe & restore  (coming soon)
+  [5] Settings
+  [6] Drive setup
+  [7] Regenerate configs
+  [0] Exit
+  ```
+- [ ] Backup flow checks for new apps since last backup before running
+- [ ] `WinSettings.ps1` absorbs taskbar pinning (calls Pin-TaskbarApp internally)
+- [ ] WinSettings idempotency: skip settings that already match desired value (if feasible)
+- [ ] Option 4 placeholder with informational message
+
+---
+
+## v0.9.0 -- Security & Hardening (planned)
+
+Focus: security audit and hardening across all scripts.
+
+- [ ] Never follow symlinks -- check `(Get-Item $path).LinkType` before operations
+- [ ] Path traversal prevention -- validate all user-provided paths with `Resolve-Path`
+- [ ] Private key detection during ScanConfigs (`.key`, `.pem`, `.pfx`, `id_rsa`, etc.)
+- [ ] Never execute discovered files -- read metadata only
+- [ ] Backup integrity verification (checksums from v0.7.0 fully integrated)
+- [ ] Size limits on all backup operations
+- [ ] Full security audit of all scripts
+
+---
+
+## v1.0.0 -- Stable Release (planned)
+
+The first stable public release. All features from v0.2.0-v0.9.0 must be complete and tested.
+
+**Release criteria:**
+- [ ] All v0.x features stable and regression-tested
+- [ ] Full end-to-end test on a clean Windows 11 install
+- [ ] All documentation up to date (README, ARCHITECTURE, VISION, CONTRIBUTING, CHANGELOG)
+- [ ] No known critical or high-severity bugs
+- [ ] Community lookup table covers 30+ common apps with verified paths
+- [ ] Security requirements fully implemented and audited
+
+---
+
+## v2.0+ -- Future Vision
+
+Long-term ideas. Not scoped or committed.
+
+- GUI interface
+- Plugin system for custom post-install steps
+- Cross-session backup verification (differential checksums)
+- Community contribution workflow (automated path verification)
+- Backup + wipe + restore automation (programmatic Windows reinstall)
