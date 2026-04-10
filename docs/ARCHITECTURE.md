@@ -76,7 +76,7 @@ Dot-sourced helper (not a module). Provides:
 | `backup_store.json` | JSON | No | Persists user-chosen backup drive path |
 | `backup_manifest.json` | JSON | No (in backup store) | Timestamps and inventory of last backup |
 | `ignored_apps.json` | JSON | No | Permanently ignored apps during detection |
-| `project_config.json` | JSON | No (planned v0.2.0) | Project-level settings and flags |
+| `project_config.json` | JSON | No (gitignored) | Project-level settings and flags (log level, size limits, backup flags). Added v0.2.0. |
 
 ---
 

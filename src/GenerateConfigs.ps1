@@ -13,7 +13,8 @@ $LogFile    = Get-LogPath -FileName "generate_configs.log"
 $ConfigDir  = Join-Path (Get-ProjectRoot) "config"
 
 # ------- INITIALISE LOGGING ------- #
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO"
+$ProjectConfig = Get-ProjectConfig
+Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
 
 Write-AnniLog -Level INFO -Message "AnniWin11 Config Generator"
 Write-AnniLog -Level INFO -Message "This script will help you create your config files from the example templates."
@@ -163,7 +164,7 @@ function New-SettingsConfig {
     Write-Host ""
     Write-Host "Taskbar settings:" -ForegroundColor Cyan
     $tbAlignment   = Read-ChoiceInput -Prompt "  Alignment" -Choices @("left", "centre") -Default $defaults.taskbar.alignment
-    $tbSearch       = Read-YesNo -Prompt "  Show search?" -Default $defaults.taskbar.search
+    $tbSearch      = Read-YesNo -Prompt "  Show search?" -Default $defaults.taskbar.search
     $tbTaskView    = Read-YesNo -Prompt "  Show Task View button?" -Default $defaults.taskbar.task_view
     $tbWidgets     = Read-YesNo -Prompt "  Show Widgets button?" -Default $defaults.taskbar.widgets
     $tbSeconds     = Read-YesNo -Prompt "  Show seconds in clock?" -Default $defaults.taskbar.show_seconds

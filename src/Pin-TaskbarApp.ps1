@@ -107,7 +107,8 @@ function Pin-TaskbarApp {
 
 if ($MyInvocation.InvocationName -ne '.') {
     $LogFile = Get-LogPath -FileName "taskbar.log"
-    Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO"
+    $ProjectConfig = Get-ProjectConfig
+    Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
 
     $SettingsConfig = Get-ConfigPath -FileName "settings.json"
     if (-not (Test-Path $SettingsConfig)) {

@@ -14,7 +14,8 @@ $Installers  = Join-Path $ProjectRoot "config" "installers"
 $LogFile     = Get-LogPath -FileName "installation.log"
 
 # ------- INITIALISE LOGGING ------- #
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO" -EnableStopwatch
+$ProjectConfig = Get-ProjectConfig
+Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level -EnableStopwatch
 
 # ------- READ APP LIST ------- #
 if (-not (Test-Path $AppsConfig)) {

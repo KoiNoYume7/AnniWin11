@@ -13,7 +13,8 @@ $LogFile          = Get-LogPath -FileName "drive_setup.log"
 $BackupStoreFile  = Get-ConfigPath -FileName "backup_store.json"
 
 # ------- INITIALISE LOGGING ------- #
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO"
+$ProjectConfig = Get-ProjectConfig
+Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
 
 Write-AnniLog -Level INFO -Message "AnniWin11 Drive Setup"
 Write-AnniLog -Level INFO -Message "Select a drive or partition for the backup store."
@@ -22,14 +23,56 @@ Write-Host ""
 # ------- LIST AVAILABLE DRIVES ------- #
 
 function Get-DriveList {
-    $drives = Get-Volume | Where-Object {
-        $_.DriveLetter -and
-        $_.DriveType -eq 'Fixed' -and
-        $_.FileSystemType -ne $null -and
-        $_.Size -gt 0
-    } | Sort-Object DriveLetter
+    <#
+    .SYNOPSIS
+        Returns a list of usable drives for the backup store.
+    .DESCRIPTION
+        Primary path: Get-Volume filtered to fixed drives with a letter and
+        filesystem. Fallback path: Get-PSDrive, which works in environments
+        where Get-Volume fails or returns nothing -- notably Windows Sandbox,
+        where the virtualised volume does not always report as 'Fixed'.
+    #>
+    $drives = @()
 
-    return $drives
+    # --- Primary: Get-Volume ---
+    try {
+        $drives = Get-Volume -ErrorAction Stop | Where-Object {
+            $_.DriveLetter -and
+            $_.DriveType -eq 'Fixed' -and
+            $null -ne $_.FileSystemType -and
+            $_.Size -gt 0
+        } | Sort-Object DriveLetter
+    }
+    catch {
+        Write-AnniLog -Level DEBUG -Message "Get-Volume failed: $($_.Exception.Message)"
+    }
+
+    if ($drives -and $drives.Count -gt 0) {
+        return $drives
+    }
+
+    # --- Fallback: Get-PSDrive (works in Windows Sandbox) ---
+    Write-AnniLog -Level DEBUG -Message "Get-Volume returned no drives, falling back to Get-PSDrive."
+    $psDrives = Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^[A-Za-z]$' -and $null -ne $_.Used }
+
+    # Wrap in a PSCustomObject shape compatible with Show-DriveTable.
+    $fallback = foreach ($d in $psDrives) {
+        $used = [int64]($d.Used  | ForEach-Object { if ($_) { $_ } else { 0 } })
+        $free = [int64]($d.Free  | ForEach-Object { if ($_) { $_ } else { 0 } })
+        $total = $used + $free
+        if ($total -le 0) { continue }
+
+        [PSCustomObject]@{
+            DriveLetter       = $d.Name
+            FileSystemLabel   = $d.Description
+            FileSystemType    = "(unknown)"
+            Size              = $total
+            SizeRemaining     = $free
+        }
+    }
+
+    return $fallback | Sort-Object DriveLetter
 }
 
 function Show-DriveTable {
@@ -55,10 +98,10 @@ function Show-DriveTable {
 
 # ------- DRIVE SELECTION ------- #
 
-$drives = Get-DriveList
+$drives = @(Get-DriveList)
 
 if ($drives.Count -eq 0) {
-    Write-AnniLog -Level ERROR -Message "No fixed drives found."
+    Write-AnniLog -Level ERROR -Message "No usable drives found. (Check Get-Volume and Get-PSDrive output.)"
     Close-AnniLog
     exit 1
 }

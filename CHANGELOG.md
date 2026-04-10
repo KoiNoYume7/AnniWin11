@@ -7,6 +7,91 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.2.0] - 2026-04-10
+
+Stability & Foundation milestone. Project-level config infrastructure,
+fixes for both known issues from v0.1.1, and a `-Force` override for restore.
+Final manual clean-install verification in Windows Sandbox is tracked in the
+local `TESTING.md` checklist.
+
+### Added
+
+- **`lib/Config.ps1`** -- New `Get-ProjectConfig` and `Get-ProjectConfigDefaults`
+  functions. Loads `config/project_config.json` layered over built-in defaults
+  and caches the result for the session (pass `-Reload` to refresh). Supported
+  keys: `max_config_folder_mb`, `auto_confirm_fuzzy`, `log_level`,
+  `check_updates_on_backup`, `suppress_c_drive_warning`.
+- **`config/project_config_example.jsonc`** -- New commented template for the
+  project-level config. Copy to `config/project_config.json` and edit.
+  (`config/*.json` is already covered by the existing `.gitignore` rule.)
+- **`src/RestoreConfigs.ps1`** -- New `-Force` switch. Bypasses the
+  "destination newer than backup" safety check and overwrites unconditionally.
+  Skip messages now mention the flag. A warning is logged at startup when
+  `-Force` is active.
+- **`src/BackupConfigs.ps1`** -- Pre-backup DetectApps pass when
+  `project_config.check_updates_on_backup` is true (default). Lets users
+  categorise apps installed since the last backup before snapshotting.
+  Failures in the detect pass are logged as warnings and do not block
+  backup.
+- **`src/BackupConfigs.ps1`** -- Directory pre-flight size check honouring
+  `project_config.max_config_folder_mb` (default 500). Oversized folders
+  are skipped with a WARNING and appear in the failed summary as
+  `<app>/<path> (oversize)`. Single-file backup paths are not subject to
+  the limit.
+
+### Changed
+
+- **All scripts** (`Main.ps1`, `WinSettings.ps1`, `DriveSetup.ps1`,
+  `BackupConfigs.ps1`, `RestoreConfigs.ps1`, `InstallApps.ps1`,
+  `DetectApps.ps1`, `GenerateConfigs.ps1`, `Pin-TaskbarApp.ps1`) --
+  `Initialize-AnniLog` now reads the log level from
+  `project_config.log_level` instead of hardcoded `"INFO"`.
+
+### Fixed
+
+- **`src/WinSettings.ps1`** -- Widgets button (`TaskbarDa`) now uses a
+  three-tier approach: `reg.exe add` first (most reliable against the
+  "unauthorized operation" error seen on some Win11 builds), then the
+  PowerShell registry provider with `New-ItemProperty`/`Set-ItemProperty`,
+  then the older `ShellFeedsTaskbarViewMode` key as a last-resort fallback.
+  Only logs a warning if all three methods fail.
+- **`src/DriveSetup.ps1`** -- `Get-DriveList` now falls back to `Get-PSDrive`
+  when `Get-Volume` returns nothing or throws. Fixes drive detection in
+  Windows Sandbox, where the virtualised volume does not always report as
+  `DriveType = Fixed`. Result is wrapped in `@()` so `.Count` is always
+  safe even with a single-drive result. (Full DriveSetup rewrite is still
+  scoped for v0.3.0.)
+
+---
+
+## [v0.1.2] - 2026-04-04
+
+Documentation overhaul and public-audience config cleanup. No functional code changes.
+
+### Changed
+
+- **`config/apps_example.jsonc`** -- Rebuilt for a broad public audience. Removed
+  personal and niche apps, added widely useful defaults, cleaned up categories.
+- **`config/app_configs_example.jsonc`** -- Expanded into a community lookup table
+  covering 30+ common apps with verified config paths for backup and restore.
+- **`README.md`** -- Full rewrite as a public-facing landing page. Added features
+  list, quick start, project structure, config reference, backup/restore notes,
+  DPAPI limitation, and security section.
+- **`ROADMAP.md`** -- Full rewrite with incremental milestones from v0.2.0 through
+  v1.0.0 and a v2.0+ future-vision section.
+- **`docs/ARCHITECTURE.md`** -- Updated to describe planned components
+  (`ScanApps.ps1`, `ScanConfigs.ps1`) and the security model.
+- **`CONTRIBUTING.md`** -- Added sections on the community lookup table workflow
+  and security requirements for config path contributions.
+
+### Added
+
+- **`docs/VISION.md`** -- New public-facing long-term architecture and design
+  spec. Covers the dual-scan engine, three-tier config discovery, community
+  lookup table, and security requirements.
+
+---
+
 ## [v0.1.1] - 2026-04-04
 
 Patch release. Post-test bug fixes, new DetectApps features, and documentation updates.

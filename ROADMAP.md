@@ -66,19 +66,30 @@ Documentation overhaul and example config cleanup for public audience.
 
 ---
 
-## v0.2.0 -- Stability & Foundation (planned)
+## v0.2.0 -- Stability & Foundation (completed 2026-04-10)
 
 Focus: fix all known bugs, add project-level config infrastructure, validate on clean install.
 
-- [ ] Fix Widgets button registry key (`WinSettings.ps1`) -- unauthorised error on some builds
-- [ ] Fix `DriveSetup.ps1` drive detection in Windows Sandbox
-- [ ] Add `config/project_config.json` infrastructure to `Config.ps1`
-  - `max_config_folder_mb`, `auto_confirm_fuzzy`, `log_level`,
+- [x] Fix Widgets button registry key (`WinSettings.ps1`) -- three-tier approach
+      with `reg.exe` primary, PS provider fallback, Feeds key last-resort
+- [x] Fix `DriveSetup.ps1` drive detection in Windows Sandbox -- `Get-PSDrive`
+      fallback when `Get-Volume` returns nothing
+- [x] Add `config/project_config.json` infrastructure to `Config.ps1`
+  - `Get-ProjectConfig` / `Get-ProjectConfigDefaults` with session caching
+  - keys: `max_config_folder_mb`, `auto_confirm_fuzzy`, `log_level`,
     `check_updates_on_backup`, `suppress_c_drive_warning`
-- [ ] Create `config/project_config_example.jsonc` template
-- [ ] Update `.gitignore` to include `config/project_config.json`
-- [ ] Full clean-install test in Windows Sandbox
-- [ ] Add `--force` override flag to `RestoreConfigs.ps1`
+- [x] Create `config/project_config_example.jsonc` template
+- [x] Update `.gitignore` to include `config/project_config.json`
+      (already covered by existing `config/*.json` rule)
+- [x] Add `-Force` override flag to `RestoreConfigs.ps1`
+- [x] Wire `project_config.json` values into consuming scripts
+      (`log_level` -> all scripts; `max_config_folder_mb` and
+      `check_updates_on_backup` -> `BackupConfigs.ps1`).
+      `suppress_c_drive_warning` remains plumbed but unused until the
+      DriveSetup rewrite in v0.3.0. `auto_confirm_fuzzy` is reserved for
+      the ScanConfigs engine in v0.5.0.
+- [~] Full clean-install test in Windows Sandbox -- deferred to manual
+      verification, tracked in local `TESTING.md` checklist
 
 ---
 

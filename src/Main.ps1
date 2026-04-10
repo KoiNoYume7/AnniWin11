@@ -12,7 +12,8 @@ Import-Module "$PSScriptRoot\..\lib\AnniLogo.psd1" -Force
 $LogFile = Get-LogPath -FileName "main.log"
 
 # ------- INITIALISE LOGGING ------- #
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO"
+$ProjectConfig = Get-ProjectConfig
+Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
 
 # ------- ASCII ART (AnniWin11-specific) ------- #
 # source: https://patorjk.com/software/taag/#p=display&f=Alligator2&t=Type+Something+&x=none&v=4&h=4&w=80&we=false

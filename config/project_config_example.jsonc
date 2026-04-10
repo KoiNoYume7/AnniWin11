@@ -1,0 +1,41 @@
+// -----------------------------------------------------------------------------
+// project_config.jsonc -- AnniWin11 project-level configuration template
+//
+// Copy this file to `config/project_config.json` and remove all comments
+// (plain JSON does not support them). Any keys you omit will fall back to the
+// built-in defaults defined in lib/Config.ps1 (Get-ProjectConfigDefaults).
+//
+// This file controls behaviour of the AnniWin11 scripts themselves, not any
+// specific app. It is independent of apps.json, settings.json, and
+// app_configs.json.
+// -----------------------------------------------------------------------------
+{
+    // Maximum size (in megabytes) for any single config folder before
+    // BackupConfigs skips it with a warning. Protects against accidentally
+    // backing up huge caches, node_modules, or Electron user-data folders.
+    // Default: 500
+    "max_config_folder_mb": 500,
+
+    // If true, ScanConfigs (v0.5.0+) will auto-accept fuzzy AppData matches
+    // without prompting. Not recommended -- leave false unless you trust the
+    // fuzzy matcher and want a fully unattended config scan.
+    // Default: false
+    "auto_confirm_fuzzy": false,
+
+    // Minimum log level written to console and log files.
+    // One of: DEBUG, INFO, WARNING, ERROR, SUCCESS
+    // Default: INFO
+    "log_level": "INFO",
+
+    // If true, DetectApps runs automatically before BackupConfigs so any apps
+    // installed since the last backup can be categorised before snapshotting.
+    // Set false for a faster, non-interactive backup flow.
+    // Default: true
+    "check_updates_on_backup": true,
+
+    // If true, suppresses the warning shown when the user selects a backup
+    // path on the C: (system) drive. Only set this if you fully understand
+    // that backups on C: will not survive a Windows reinstall.
+    // Default: false
+    "suppress_c_drive_warning": false
+}

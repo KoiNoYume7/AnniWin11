@@ -10,11 +10,12 @@ minimal manual steps.
 
 ## Status
 
-**Alpha (v0.1.2)** -- this project is under active development.
+**Alpha (v0.2.0)** -- this project is under active development.
 See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-> **Known issues:** The Widgets taskbar button setting may fail on some Windows 11 builds.
-> See [CHANGELOG.md](CHANGELOG.md) for details.
+> **v0.2.0 highlights:** Project-level config (`project_config.json`),
+> three-tier Widgets taskbar fix, Windows Sandbox drive-detection fallback,
+> and a `-Force` override for restore. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 
@@ -129,7 +130,7 @@ AnniWin11 uses two types of config files:
 | `app_configs.json` | Maps each app to its config file locations for backup/restore |
 | `backup_store.json` | Persists the user-chosen backup drive path |
 | `ignored_apps.json` | Apps permanently ignored during detection |
-| `project_config.json` | Project-level settings (planned -- v0.2.0) |
+| `project_config.json` | Project-level settings (log level, size limits, backup flags) |
 
 ---
 
