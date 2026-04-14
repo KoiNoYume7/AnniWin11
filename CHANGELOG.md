@@ -7,6 +7,32 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.6.0] - 2026-04-14
+
+GenerateConfigs rewrite. Full detection pipeline orchestration.
+
+### Changed
+
+- **`src/GenerateConfigs.ps1`** -- Full rewrite. Now orchestrates the
+  ScanApps + ScanConfigs pipeline instead of copying example templates.
+  - **Full pipeline mode** (option 1): prerequisites check -> ScanApps
+    dual-source detection -> interactive app categorisation (MainApps /
+    AdditionalApps / Tools / Ignore) -> ScanConfigs three-tier discovery
+    -> write `apps.json` and `app_configs.json` -> settings wizard.
+  - **Independent steps**: app detection (option 2) and config discovery
+    (option 3) can be run separately via the menu. Config discovery
+    requires `apps.json` to exist.
+  - **Never silently overwrites** -- always prompts before overwriting
+    existing `apps.json`, `app_configs.json`, or `settings.json`.
+  - **Ignored apps** -- apps marked `[I]` during categorisation are saved
+    to `ignored_apps.json` and skipped in future scans.
+  - **Generation summary** -- displays OK/MISSING status for all config
+    files after the full pipeline completes.
+  - Settings config wizard (settings.json) carried over unchanged from
+    v0.1.0.
+
+---
+
 ## [v0.5.0] - 2026-04-14
 
 Config Discovery. New three-tier config path discovery engine.

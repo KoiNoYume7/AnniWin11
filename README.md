@@ -10,12 +10,13 @@ minimal manual steps.
 
 ## Status
 
-**Alpha (v0.5.0)** -- this project is under active development.
+**Alpha (v0.6.0)** -- this project is under active development.
 See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-> **v0.5.0 highlights:** Three-tier config path discovery engine
-> (`ScanConfigs.ps1`) -- community lookup table, fuzzy AppData scan,
-> install directory scan, with security rules and interactive confirmation.
+> **v0.6.0 highlights:** GenerateConfigs rewrite -- orchestrates full
+> detection pipeline (ScanApps + ScanConfigs) with interactive app
+> categorisation and config path discovery. Three new scripts in two
+> releases (v0.4.0-v0.5.0) power the engine.
 > See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---

@@ -134,16 +134,16 @@ Focus: automated config path discovery engine.
 
 ---
 
-## v0.6.0 -- GenerateConfigs Rewrite (planned)
+## v0.6.0 -- GenerateConfigs Rewrite (completed 2026-04-14)
 
 Focus: orchestrate the full detection pipeline to produce all config files.
 
-- [ ] Rewrite `src/GenerateConfigs.ps1` to orchestrate ScanApps + ScanConfigs
-- [ ] Flow: detect apps -> categorise -> scan configs -> confirm -> write
-- [ ] App categorisation: MainApps / AdditionalApps / Tools / Ignore
-- [ ] Incremental progress saving (resume after interruption)
-- [ ] Never silently overwrite existing configs -- always ask first
-- [ ] Steps 2-4 (apps) and 5-7 (configs) runnable independently from main menu
+- [x] Rewrite `src/GenerateConfigs.ps1` to orchestrate ScanApps + ScanConfigs
+- [x] Flow: detect apps -> categorise -> scan configs -> confirm -> write
+- [x] App categorisation: MainApps / AdditionalApps / Tools / Ignore
+- [ ] Incremental progress saving (resume after interruption) -- deferred
+- [x] Never silently overwrite existing configs -- always ask first
+- [x] Steps 2-4 (apps) and 5-7 (configs) runnable independently from main menu
 
 ---
 
