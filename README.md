@@ -10,13 +10,13 @@ minimal manual steps.
 
 ## Status
 
-**Alpha (v0.3.0)** -- this project is under active development.
+**Alpha (v0.4.0)** -- this project is under active development.
 See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-> **v0.3.0 highlights:** DriveSetup rewrite -- detects Fixed, Removable
-> (USB/flash), and Network drives, C: drive / system-disk safety warning,
-> general reinstall reminder, improved partition creation with size
-> validation. See [CHANGELOG.md](CHANGELOG.md) for details.
+> **v0.4.0 highlights:** New dual-source app scanner (`ScanApps.ps1`) --
+> combines winget list + Start Menu shortcut resolution with fuzzy
+> deduplication. Detects apps regardless of install source.
+> See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 

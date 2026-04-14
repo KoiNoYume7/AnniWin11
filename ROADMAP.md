@@ -106,16 +106,16 @@ Focus: fix drive detection bugs, add USB/flash support, improve safety warnings.
 
 ---
 
-## v0.4.0 -- Smart App Detection (planned)
+## v0.4.0 -- Smart App Detection (completed 2026-04-14)
 
 Focus: new dual-scan app detection engine replacing `DetectApps.ps1`.
 
-- [ ] Build `src/ScanApps.ps1` with two scan sources:
+- [x] Build `src/ScanApps.ps1` with two scan sources:
   - Source 1: `winget list` (carry over regex parser from DetectApps)
   - Source 2: Start Menu shortcut scan (`.lnk` resolution via COM)
-- [ ] Cross-reference and deduplicate results (prefer winget entry when both match)
-- [ ] Filter out Windows system components, uninstallers, web shortcuts
-- [ ] Unified output format: name, source, executable path, install directory, notes
+- [x] Cross-reference and deduplicate results (prefer winget entry when both match)
+- [x] Filter out Windows system components, uninstallers, web shortcuts
+- [x] Unified output format: name, source, executable path, install directory, notes
 
 ---
 

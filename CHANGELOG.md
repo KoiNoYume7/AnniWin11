@@ -7,6 +7,39 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.4.0] - 2026-04-14
+
+Smart App Detection. New dual-source app scanner replacing the winget-only
+approach in `DetectApps.ps1`.
+
+### Added
+
+- **`src/ScanApps.ps1`** -- New dual-source system app scanner.
+  - **Source 1: winget list** -- regex parser carried over from
+    `DetectApps.ps1` (v0.1.1). Extracts Name, Id, Source, and Version.
+  - **Source 2: Start Menu shortcut scan** -- resolves `.lnk` files in
+    per-user and system-wide Start Menu Programs folders via WScript.Shell
+    COM object. Extracts executable path, install directory, and publisher
+    from file version info.
+  - **Merge & deduplication** -- three-strategy fuzzy name matching
+    (exact normalised, substring containment, executable-to-ID) merges
+    winget and Start Menu results. Winget entry is preferred when both
+    match; executable path from Start Menu is added to enrich it.
+  - **Filtering** -- excludes Windows system components (`System32`,
+    `SysWOW64`), Windows SDK/Kit tools (`Windows Kits\`), uninstaller
+    shortcuts, web URL shortcuts, broken shortcuts, non-executable
+    targets, and system shortcut groups (`Windows Tools`, `Accessories`,
+    etc.). Multi-arch duplicates (e.g. WinDbg arm/x64/x86) collapsed
+    to a single entry.
+  - **Unified output format** per app: `Name`, `Id`, `Source`, `Version`,
+    `Executable`, `InstallDir`, `Notes`.
+  - **Standalone mode** -- when run directly, prints a colour-coded
+    summary table and writes `config/scan_results.json` for inspection.
+  - **Dot-source mode** -- exports `Invoke-AppScan` function for use
+    by `GenerateConfigs.ps1` and other orchestrators.
+
+---
+
 ## [v0.3.0] - 2026-04-14
 
 DriveSetup rewrite. All drive types now detected, safety warnings added.
