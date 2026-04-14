@@ -10,12 +10,12 @@ minimal manual steps.
 
 ## Status
 
-**Alpha (v0.4.0)** -- this project is under active development.
+**Alpha (v0.5.0)** -- this project is under active development.
 See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-> **v0.4.0 highlights:** New dual-source app scanner (`ScanApps.ps1`) --
-> combines winget list + Start Menu shortcut resolution with fuzzy
-> deduplication. Detects apps regardless of install source.
+> **v0.5.0 highlights:** Three-tier config path discovery engine
+> (`ScanConfigs.ps1`) -- community lookup table, fuzzy AppData scan,
+> install directory scan, with security rules and interactive confirmation.
 > See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---

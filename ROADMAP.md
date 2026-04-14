@@ -119,18 +119,18 @@ Focus: new dual-scan app detection engine replacing `DetectApps.ps1`.
 
 ---
 
-## v0.5.0 -- Config Discovery (planned)
+## v0.5.0 -- Config Discovery (completed 2026-04-14)
 
 Focus: automated config path discovery engine.
 
-- [ ] Build `src/ScanConfigs.ps1` with three-tier approach:
+- [x] Build `src/ScanConfigs.ps1` with three-tier approach:
   - Tier 1: Community lookup table (`app_configs_example.jsonc`)
   - Tier 2: Fuzzy AppData scan (name matching with size/exclusion filters)
   - Tier 3: Install directory scan (config file patterns)
-- [ ] Interactive confirmation flow for fuzzy matches
-- [ ] Security rules: never suggest private keys, browser profile roots, System32,
+- [x] Interactive confirmation flow for fuzzy matches
+- [x] Security rules: never suggest private keys, browser profile roots, System32,
   or symlink targets
-- [ ] Audit logging of all skipped candidates at DEBUG level
+- [x] Audit logging of all skipped candidates at DEBUG level
 
 ---
 

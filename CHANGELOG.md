@@ -7,6 +7,45 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.5.0] - 2026-04-14
+
+Config Discovery. New three-tier config path discovery engine.
+
+### Added
+
+- **`src/ScanConfigs.ps1`** -- New config path discovery engine with three tiers:
+  - **Tier 1: Community lookup table** -- matches app names against
+    `app_configs_example.jsonc` (exact and normalised name matching).
+    Fast path for the 30+ apps already in the lookup table.
+  - **Tier 2: Fuzzy AppData scan** -- scans `%APPDATA%`, `%LOCALAPPDATA%`,
+    and `%PROGRAMDATA%` for folders matching the app name or publisher.
+    Four match strategies (exact, contains, publisher, substring) sorted
+    by confidence. Applies size filter (`max_config_folder_mb`), age
+    filter (skip folders older than 2 years), exclusion list (Temp, Cache,
+    node_modules, ShaderCache, etc.), and log-only folder detection.
+  - **Tier 3: Install directory scan** -- when Tiers 1-2 find nothing,
+    scans the app's install directory for config file patterns (`.json`,
+    `.ini`, `.cfg`, `.xml`, `.toml`, `.yaml`, `.db`, `.sqlite`, etc.),
+    skipping `bin/`, `lib/`, `node_modules/`, and similar subdirectories.
+  - **Interactive confirmation flow** -- fuzzy matches (Tier 2) prompt
+    the user with path, size, last-modified date, and match type.
+    Options: `[Y]` add, `[N]` skip, `[A]` auto-confirm remaining,
+    `[?]` open folder in Explorer. `[A]` sets a session-only flag
+    unless `auto_confirm_fuzzy` is true in `project_config.json`.
+  - **Security rules** -- never suggests folders containing private key
+    files (`.key`, `.pem`, `.pfx`, `.p12`, `.ppk`, `id_rsa*`,
+    `id_ed25519*`); never suggests browser profile root folders; never
+    follows symlinks/junctions; never suggests paths under `System32`,
+    `SysWOW64`, or the Windows directory. All skipped candidates logged
+    at DEBUG level for user audit.
+  - **Standalone mode** -- when run directly, dot-sources `ScanApps.ps1`
+    to get the app list, runs the full three-tier scan, and displays a
+    colour-coded summary (lookup/AppData/install-dir breakdown).
+  - **Dot-source mode** -- exports `Invoke-ConfigScan` for use by
+    `GenerateConfigs.ps1` and other orchestrators.
+
+---
+
 ## [v0.4.0] - 2026-04-14
 
 Smart App Detection. New dual-source app scanner replacing the winget-only
