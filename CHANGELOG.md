@@ -7,6 +7,50 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.3.0] - 2026-04-14
+
+DriveSetup rewrite. All drive types now detected, safety warnings added.
+
+### Changed
+
+- **`src/DriveSetup.ps1`** -- Full rewrite of `Get-DriveList`. Now uses
+  `Get-Partition` + `Get-Volume` together instead of `Get-Volume` alone.
+  Discovers all drive types: Fixed (internal), Removable (USB/flash via
+  `Get-Disk` BusType check), and Network (mapped drives via `Get-PSDrive`
+  DisplayRoot detection). Each drive entry now carries a `DiskNumber` for
+  system-disk comparison and a `DriveType` for display.
+- **`src/DriveSetup.ps1`** -- `Show-DriveTable` now includes a **Type**
+  column showing Fixed, Removable, Network, or (unknown) for each drive.
+  Long labels (e.g. network UNC paths) are truncated to fit the table.
+- **`src/DriveSetup.ps1`** -- Partition creation flow now validates the
+  requested shrink size against `Get-PartitionSupportedSize` before
+  attempting the resize, preventing failures from over-shrinking.
+- **`src/DriveSetup.ps1`** -- `Get-PSDrive` fallback for Windows Sandbox
+  preserved and updated to emit the new object shape (DriveType, DiskNumber
+  fields) so all downstream code works uniformly.
+
+### Added
+
+- **`src/DriveSetup.ps1`** -- New `Get-SystemDiskNumber` helper. Resolves
+  the physical disk number hosting the C: partition, used to detect whether
+  a user-selected drive shares the same physical disk as Windows.
+- **`src/DriveSetup.ps1`** -- New `Test-IsSystemDisk` helper. Compares a
+  selected drive's DiskNumber against the system disk. Falls back to a
+  simple `C:` letter check when partition metadata is unavailable.
+- **`src/DriveSetup.ps1`** -- **C: drive / system disk warning.** When the
+  user selects any drive on the same physical disk as C:, a prominent red
+  warning is displayed explaining the backup will likely be lost during a
+  Windows reinstall. The user must confirm with `yes` to proceed. This
+  warning is also shown after partition creation (since the new partition
+  is necessarily on the same disk as C:). Suppressible via
+  `project_config.json` -> `suppress_c_drive_warning`.
+- **`src/DriveSetup.ps1`** -- **General reinstall reminder.** After every
+  drive selection (including non-system drives), a yellow reminder is
+  shown: "Make sure your backup destination is on a drive that will NOT
+  be wiped during reinstall."
+
+---
+
 ## [v0.2.0] - 2026-04-10
 
 Stability & Foundation milestone. Project-level config infrastructure,

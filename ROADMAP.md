@@ -93,16 +93,16 @@ Focus: fix all known bugs, add project-level config infrastructure, validate on 
 
 ---
 
-## v0.3.0 -- DriveSetup Rewrite (planned)
+## v0.3.0 -- DriveSetup Rewrite (completed 2026-04-14)
 
 Focus: fix drive detection bugs, add USB/flash support, improve safety warnings.
 
-- [ ] Detect all drive types: Fixed, Removable (USB/flash), and Network
-- [ ] Fix partition detection (use `Get-Partition` + `Get-Volume` together)
-- [ ] Show and allow selection of USB/flash drives
-- [ ] C: drive warning when user selects a path on the system disk
-- [ ] General reinstall warning after any drive selection
-- [ ] Carry over partition creation (shrink C:) with detection fix
+- [x] Detect all drive types: Fixed, Removable (USB/flash), and Network
+- [x] Fix partition detection (use `Get-Partition` + `Get-Volume` together)
+- [x] Show and allow selection of USB/flash drives
+- [x] C: drive warning when user selects a path on the system disk
+- [x] General reinstall warning after any drive selection
+- [x] Carry over partition creation (shrink C:) with detection fix
 
 ---
 

@@ -10,12 +10,13 @@ minimal manual steps.
 
 ## Status
 
-**Alpha (v0.2.0)** -- this project is under active development.
+**Alpha (v0.3.0)** -- this project is under active development.
 See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-> **v0.2.0 highlights:** Project-level config (`project_config.json`),
-> three-tier Widgets taskbar fix, Windows Sandbox drive-detection fallback,
-> and a `-Force` override for restore. See [CHANGELOG.md](CHANGELOG.md) for details.
+> **v0.3.0 highlights:** DriveSetup rewrite -- detects Fixed, Removable
+> (USB/flash), and Network drives, C: drive / system-disk safety warning,
+> general reinstall reminder, improved partition creation with size
+> validation. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 
