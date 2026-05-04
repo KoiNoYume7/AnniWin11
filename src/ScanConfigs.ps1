@@ -212,7 +212,8 @@ function Find-ConfigInAppData {
     param(
         [string]$AppName,
         [string]$Publisher = "",
-        [int]$MaxSizeMB = 500
+        [int]$MaxSizeMB = 500,
+        [hashtable]$FolderCache = $null
     )
 
     $searchRoots = @(
@@ -230,8 +231,12 @@ function Find-ConfigInAppData {
         $root = $sr.Root
         if (-not $root -or -not (Test-Path $root)) { continue }
 
-        # Only enumerate top-level subdirectories
-        $folders = Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue
+        # Use pre-cached listing when available (built once by Invoke-ConfigScan)
+        $folders = if ($FolderCache -and $FolderCache.ContainsKey($root)) {
+            $FolderCache[$root]
+        } else {
+            Get-ChildItem -Path $root -Directory -ErrorAction SilentlyContinue
+        }
 
         foreach ($folder in $folders) {
             $folderName = $folder.Name
@@ -291,39 +296,49 @@ function Find-ConfigInAppData {
                 continue
             }
 
-            # Check for private keys
-            if (Test-ContainsPrivateKeys -Path $folder.FullName) {
-                continue
-            }
-
-            # Check if this is a browser profile root
+            # Check if this is a browser profile root (fast path check, no I/O)
             if (Test-IsBrowserProfileRoot -Path $folder.FullName) {
-                Write-AnniLog -Level DEBUG -Message "[Tier2] Browser profile root detected: $($folder.FullName) -- skipping (use specific subfolders from lookup table)"
+                Write-AnniLog -Level DEBUG -Message "[Tier2] Browser profile root: $($folder.FullName) -- skipping"
                 continue
             }
 
-            # Measure folder size
-            $folderSize = 0
+            # Single-pass validation: private keys + size + non-log content.
+            # Replaces three separate Get-ChildItem -Recurse calls with one streaming .NET pass.
+            $hasPrivKey  = $false
+            $hasNonLog   = $false
+            $totalBytes  = [int64]0
+            $privKeyExts = [System.Collections.Generic.HashSet[string]]@('.key','.pem','.pfx','.p12','.ppk')
+
             try {
-                $folderSize = (Get-ChildItem -Path $folder.FullName -Recurse -Force -ErrorAction SilentlyContinue |
-                    Measure-Object -Property Length -Sum).Sum
-                if ($null -eq $folderSize) { $folderSize = 0 }
+                $dirInfo = [System.IO.DirectoryInfo]::new($folder.FullName)
+                foreach ($fi in $dirInfo.EnumerateFiles('*', [System.IO.SearchOption]::AllDirectories)) {
+                    $ext  = $fi.Extension.ToLower()
+                    $name = $fi.Name.ToLower()
+
+                    if ($privKeyExts.Contains($ext) -or $name -match '^(id_rsa|id_ed25519|id_ecdsa|id_dsa)') {
+                        Write-AnniLog -Level WARNING -Message "[Security] Private key detected in '$($folder.FullName)': $name -- excluded."
+                        $hasPrivKey = $true
+                        break
+                    }
+
+                    $totalBytes += $fi.Length
+                    if (-not $hasNonLog -and $ext -ne '.log') { $hasNonLog = $true }
+                }
             }
             catch {
-                Write-AnniLog -Level DEBUG -Message "[Tier2] Could not measure size: $($folder.FullName)"
+                Write-AnniLog -Level DEBUG -Message "[Tier2] Could not scan '$($folder.FullName)': $_"
             }
 
-            $sizeMB = [math]::Round($folderSize / 1MB, 1)
-            if ($sizeMB -gt $MaxSizeMB) {
-                Write-AnniLog -Level DEBUG -Message "[Tier2] Skipped (oversize ${sizeMB}MB > ${MaxSizeMB}MB): $($folder.FullName)"
+            if ($hasPrivKey) { continue }
+
+            if (-not $hasNonLog) {
+                Write-AnniLog -Level DEBUG -Message "[Tier2] Skipped (log-only folder): $($folder.FullName)"
                 continue
             }
 
-            # Check if folder contains only .log files
-            $nonLogFiles = Get-ChildItem -Path $folder.FullName -File -Recurse -ErrorAction SilentlyContinue |
-                Where-Object { $_.Extension -ne '.log' } | Select-Object -First 1
-            if (-not $nonLogFiles) {
-                Write-AnniLog -Level DEBUG -Message "[Tier2] Skipped (log-only folder): $($folder.FullName)"
+            $sizeMB = [math]::Round($totalBytes / 1MB, 1)
+            if ($sizeMB -gt $MaxSizeMB) {
+                Write-AnniLog -Level DEBUG -Message "[Tier2] Skipped (oversize ${sizeMB}MB > ${MaxSizeMB}MB): $($folder.FullName)"
                 continue
             }
 
@@ -375,32 +390,42 @@ function Find-ConfigInInstallDir {
 
     $candidates = @()
 
-    foreach ($pattern in $script:ConfigFileExtensions) {
-        $files = Get-ChildItem -Path $InstallDir -Filter $pattern -Recurse -ErrorAction SilentlyContinue -Force |
-            Where-Object {
-                # Skip files in bin/lib subdirectories
-                $relDir = $_.DirectoryName.Substring($InstallDir.Length).TrimStart('\').ToLower()
-                $skipThis = $false
-                foreach ($skip in $script:SkipInstallSubdirs) {
-                    if ($relDir -eq $skip -or $relDir.StartsWith("$skip\")) {
-                        $skipThis = $true
-                        break
-                    }
-                }
-                -not $skipThis
-            }
+    # Single-pass scan using a HashSet for O(1) extension lookup.
+    # Replaces 12 separate Get-ChildItem -Recurse calls (one per extension pattern).
+    $allowedExts = [System.Collections.Generic.HashSet[string]]::new(
+        [string[]]@('.json','.ini','.cfg','.xml','.toml','.yaml','.yml',
+                     '.conf','.config','.properties','.db','.sqlite'),
+        [System.StringComparer]::OrdinalIgnoreCase
+    )
 
-        foreach ($file in $files) {
-            $sizeMB = [math]::Round($file.Length / 1MB, 1)
+    try {
+        $dirInfo = [System.IO.DirectoryInfo]::new($InstallDir)
+        foreach ($fi in $dirInfo.EnumerateFiles('*', [System.IO.SearchOption]::AllDirectories)) {
+            if (-not $allowedExts.Contains($fi.Extension)) { continue }
+
+            $relDir = $fi.DirectoryName.Substring($InstallDir.Length).TrimStart('\').ToLower()
+            $skipThis = $false
+            foreach ($skipSub in $script:SkipInstallSubdirs) {
+                if ($relDir -eq $skipSub -or $relDir.StartsWith("$skipSub\")) {
+                    $skipThis = $true
+                    break
+                }
+            }
+            if ($skipThis) { continue }
+
+            $sizeMB = [math]::Round($fi.Length / 1MB, 1)
             if ($sizeMB -gt $MaxSizeMB) { continue }
 
             $candidates += [PSCustomObject]@{
-                Path         = $file.FullName
-                RelPath      = $file.FullName.Substring($InstallDir.Length).TrimStart('\')
+                Path         = $fi.FullName
+                RelPath      = $fi.FullName.Substring($InstallDir.Length).TrimStart('\')
                 SizeMB       = $sizeMB
-                LastModified = $file.LastWriteTime
+                LastModified = $fi.LastWriteTime
             }
         }
+    }
+    catch {
+        Write-AnniLog -Level DEBUG -Message "[Tier3] Could not scan '$InstallDir': $_"
     }
 
     return $candidates
@@ -425,7 +450,7 @@ function Confirm-ConfigCandidate {
     )
 
     if ($AutoConfirm) {
-        Write-AnniLog -Level DEBUG -Message "[Confirm] Auto-confirmed: $($Candidate.Path)"
+        Write-AnniLog -Level INFO -Message "[Auto] $AppName --> $($Candidate.Path)"
         return 'Y'
     }
 
@@ -512,10 +537,28 @@ function Invoke-ConfigScan {
     $tier3Count = 0
     $skippedCount = 0
 
+    # Pre-cache AppData top-level folder listings once.
+    # Without this, Find-ConfigInAppData runs Get-ChildItem on all three roots for every app.
+    Write-Progress -Activity "Scanning config paths" -Status "Indexing AppData folders..." -PercentComplete 0
+    $folderCache = @{}
+    foreach ($cacheRoot in @($env:APPDATA, $env:LOCALAPPDATA, $env:PROGRAMDATA)) {
+        if ($cacheRoot -and (Test-Path $cacheRoot)) {
+            $folderCache[$cacheRoot] = [array](Get-ChildItem -Path $cacheRoot -Directory -ErrorAction SilentlyContinue)
+        }
+    }
+    Write-AnniLog -Level INFO -Message "AppData index: $($folderCache[$env:APPDATA].Count) Roaming, $($folderCache[$env:LOCALAPPDATA].Count) Local, $($folderCache[$env:PROGRAMDATA].Count) ProgramData folders"
+
+    $totalApps = $Apps.Count
+    $appIndex  = 0
+
     foreach ($app in $Apps) {
+        $appIndex++
         $appName = $app.Name
         if (-not $appName) { continue }
 
+        Write-Progress -Activity "Scanning config paths" `
+                       -Status "[$appIndex/$totalApps] $appName" `
+                       -PercentComplete ([math]::Round(($appIndex / $totalApps) * 100))
         Write-AnniLog -Level DEBUG -Message "Processing: $appName"
 
         # --- TIER 1: Community lookup table ---
@@ -534,7 +577,23 @@ function Invoke-ConfigScan {
 
         # --- TIER 2: Fuzzy AppData scan ---
         $publisher = if ($app.PSObject.Properties['Publisher']) { $app.Publisher } else { "" }
-        $appDataCandidates = Find-ConfigInAppData -AppName $appName -Publisher $publisher -MaxSizeMB $maxSizeMB
+
+        $useAutoConfirmNow = $autoConfirmFuzzy -or $sessionAutoConfirm
+        if ($useAutoConfirmNow) {
+            Write-AnniLog -Level INFO -Message "[$appIndex/$totalApps] Scanning: $appName"
+        }
+
+        Write-Progress -Activity "Scanning config paths" `
+                       -Status "[$appIndex/$totalApps] $appName" `
+                       -CurrentOperation "Searching AppData..." `
+                       -PercentComplete ([math]::Round(($appIndex / $totalApps) * 100))
+
+        $appDataCandidates = Find-ConfigInAppData -AppName $appName -Publisher $publisher -MaxSizeMB $maxSizeMB -FolderCache $folderCache
+
+        Write-Progress -Activity "Scanning config paths" `
+                       -Status "[$appIndex/$totalApps] $appName" `
+                       -CurrentOperation "($($appDataCandidates.Count) candidate(s) found)" `
+                       -PercentComplete ([math]::Round(($appIndex / $totalApps) * 100))
 
         if ($appDataCandidates.Count -gt 0) {
             $confirmed = @()
@@ -600,6 +659,7 @@ function Invoke-ConfigScan {
         $skippedCount++
     }
 
+    Write-Progress -Activity "Scanning config paths" -Completed
     Write-AnniLog -Level INFO -Message "Config scan complete: Tier1=$tier1Count, Tier2=$tier2Count, Tier3=$tier3Count, Skipped=$skippedCount"
     return $results
 }

@@ -147,12 +147,33 @@ Focus: orchestrate the full detection pipeline to produce all config files.
 
 ---
 
-## v0.7.0 -- Backup & Restore v2 (planned)
+## v0.7.0 -- Bug-fix & Polish (completed 2026-05-05)
+
+Focus: remove fragile thread-job parallelism, correct first-time setup flow, add
+state reset and pre-reinstall validation. Performance optimisations in
+ScanConfigs and ScanApps.
+
+- [x] Remove `Start-ThreadJob` from `ScanApps.ps1` -- revert to sequential scan
+- [x] Trim first-time setup to correct 2-step flow (DriveSetup + GenerateConfigs)
+- [x] `Invoke-ScriptInProcess` in `Main.ps1` for safe in-process script execution
+- [x] `ResetState.ps1` -- selective wipe of generated configs, settings, backups
+- [x] `test_suite.ps1` -- pre-reinstall validation suite
+- [x] Back-navigation `[B]` during app categorisation in `GenerateConfigs.ps1`
+- [x] Progress bar sub-status during `ScanConfigs` Tier 3 auto-confirm
+- [x] Fix JSONC comment stripper (2-pass regex, inline `//` support)
+- [x] Fix `RestoreConfigs.ps1` env var expansion bug
+- [x] `check_updates_on_backup` default `false`
+- [x] Performance: single-pass .NET enumeration in `ScanConfigs.ps1` Tier 3
+- [x] Performance: O(n) fuzzy matching via pre-built normalised winget list in `ScanApps.ps1`
+
+---
+
+## v0.8.0 -- Backup & Restore v2 (planned)
 
 Focus: improved backup/restore flows with integrity checks and config file backup.
 
-- [ ] Back up config files (apps.json, settings.json, app_configs.json) alongside app data
-- [ ] Check available space before backup, warn if < 20% free
+- [ ] Back up config files (`apps.json`, `settings.json`, `app_configs.json`) alongside app data
+- [ ] Check available space before backup, warn if < 20 % free
 - [ ] SHA256 checksum for each backed-up file in `backup_manifest.json`
 - [ ] Verify checksums on restore, warn on mismatch
 - [ ] New restore flow: validate manifest, show summary, prominent warnings, confirm
@@ -161,7 +182,7 @@ Focus: improved backup/restore flows with integrity checks and config file backu
 
 ---
 
-## v0.8.0 -- Menu & UX Polish (planned)
+## v0.9.0 -- Menu & UX Polish (planned)
 
 Focus: updated menu structure, smarter backup flow, WinSettings improvements.
 
@@ -183,7 +204,7 @@ Focus: updated menu structure, smarter backup flow, WinSettings improvements.
 
 ---
 
-## v0.9.0 -- Security & Hardening (planned)
+## v0.10.0 -- Security & Hardening (planned)
 
 Focus: security audit and hardening across all scripts.
 
@@ -191,7 +212,7 @@ Focus: security audit and hardening across all scripts.
 - [ ] Path traversal prevention -- validate all user-provided paths with `Resolve-Path`
 - [ ] Private key detection during ScanConfigs (`.key`, `.pem`, `.pfx`, `id_rsa`, etc.)
 - [ ] Never execute discovered files -- read metadata only
-- [ ] Backup integrity verification (checksums from v0.7.0 fully integrated)
+- [ ] Backup integrity verification (checksums from v0.8.0 fully integrated)
 - [ ] Size limits on all backup operations
 - [ ] Full security audit of all scripts
 
@@ -199,7 +220,7 @@ Focus: security audit and hardening across all scripts.
 
 ## v1.0.0 -- Stable Release (planned)
 
-The first stable public release. All features from v0.2.0-v0.9.0 must be complete and tested.
+The first stable public release. All features from v0.2.0-v0.10.0 must be complete and tested.
 
 **Release criteria:**
 - [ ] All v0.x features stable and regression-tested

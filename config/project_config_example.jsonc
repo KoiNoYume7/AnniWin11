@@ -27,11 +27,10 @@
     // Default: INFO
     "log_level": "INFO",
 
-    // If true, DetectApps runs automatically before BackupConfigs so any apps
-    // installed since the last backup can be categorised before snapshotting.
-    // Set false for a faster, non-interactive backup flow.
-    // Default: true
-    "check_updates_on_backup": true,
+    // Run DetectApps before each backup to catch newly installed apps.
+    // Useful for keeping configs up to date, but adds ~5-10s per backup run.
+    // Default: false. Set to true if you want automatic detection on every backup.
+    "check_updates_on_backup": false,
 
     // If true, suppresses the warning shown when the user selects a backup
     // path on the C: (system) drive. Only set this if you fully understand

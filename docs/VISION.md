@@ -40,7 +40,6 @@ setup.bat
 Main menu -> [1] First-time setup:
   Step 1: DriveSetup.ps1        -- select backup destination
   Step 2: GenerateConfigs.ps1   -- detect apps, discover configs, build all config files
-  Step 3: WinSettings.ps1       -- apply OS settings (includes taskbar pinning)
 ```
 
 `GenerateConfigs.ps1` is the orchestrator. It calls `ScanApps.ps1` and `ScanConfigs.ps1`

@@ -37,7 +37,7 @@ catch {
 # ------- INSTALL FUNCTIONS ------- #
 
 function WingetInstall {
-    param([string] $Id, [string] $Name)
+    param([string] $Id, [string] $Name, [string] $Source = "winget")
 
     if (-not $Id) {
         Write-AnniLog -Level WARNING -Message "Missing winget id for $Name"
@@ -48,7 +48,7 @@ function WingetInstall {
 
     try {
         $process = Start-Process -FilePath "winget" `
-            -ArgumentList "install", "--id", $Id, "--source", "winget", "-e", "--accept-package-agreements", "--accept-source-agreements", "-h" `
+            -ArgumentList "install", "--id", $Id, "--source", $Source, "-e", "--accept-package-agreements", "--accept-source-agreements", "-h" `
             -NoNewWindow -Wait -PassThru
 
         $exitCode = $process.ExitCode
@@ -90,6 +90,15 @@ function Install-App {
                 return
             }
             WingetInstall -Id $id -Name $name | Out-Null
+        }
+
+        'msstore' {
+            $id = $App.id
+            if (-not $id) {
+                Write-AnniLog -Level WARNING -Message "'$name' skipped: missing msstore id"
+                return
+            }
+            WingetInstall -Id $id -Name $name -Source "msstore" | Out-Null
         }
 
         'internet' {

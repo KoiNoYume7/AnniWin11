@@ -10,7 +10,8 @@ config/installers/
 # Log files (auto-created at runtime)
 logs/
 
-# Dev task list (personal, not committed)
+# Dev task list and personal helpers (not committed)
 TODO.md
 PROMPT.md
 TESTING.md
+check_backup.ps1

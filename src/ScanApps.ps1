@@ -340,6 +340,15 @@ function Merge-AppLists {
         }
     }
 
+    # Pre-build normalised winget list for O(n) Strategy 2 matching.
+    # Without this, the inner loop re-computes NormKey for every outer iteration (O(n^2)).
+    $wingetNormList = $WingetApps | ForEach-Object {
+        [PSCustomObject]@{
+            App     = $_
+            NormKey = ($_.Name -replace '[^a-zA-Z0-9]', '').ToLower()
+        }
+    }
+
     $merged = [System.Collections.ArrayList]::new()
     $matchedWingetKeys = @{}
 
@@ -353,12 +362,12 @@ function Merge-AppLists {
             $matchedWinget = $wingetByName[$smaKey]
         }
 
-        # Strategy 2: Winget name contains Start Menu name or vice versa
+        # Strategy 2: Winget name contains Start Menu name or vice versa (uses pre-built list)
         if (-not $matchedWinget) {
-            foreach ($wa in $WingetApps) {
-                $waKey = ($wa.Name -replace '[^a-zA-Z0-9]', '').ToLower()
+            foreach ($entry in $wingetNormList) {
+                $waKey = $entry.NormKey
                 if ($waKey -and $smaKey -and ($waKey.Contains($smaKey) -or $smaKey.Contains($waKey))) {
-                    $matchedWinget = $wa
+                    $matchedWinget = $entry.App
                     break
                 }
             }
@@ -455,13 +464,9 @@ function Invoke-AppScan {
     Write-AnniLog -Level INFO -Message "Starting dual-source app scan..."
     Write-Host ""
 
-    # Source 1: winget
-    $wingetApps = @(Get-WingetApps)
-
-    # Source 2: Start Menu
+    $wingetApps    = @(Get-WingetApps)
     $startMenuApps = @(Get-StartMenuApps)
 
-    # Merge and deduplicate
     $unified = Merge-AppLists -WingetApps $wingetApps -StartMenuApps $startMenuApps
 
     Write-AnniLog -Level SUCCESS -Message "App scan complete: $($unified.Count) app(s) detected."

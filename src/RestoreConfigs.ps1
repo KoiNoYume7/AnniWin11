@@ -123,8 +123,9 @@ foreach ($app in $appConfigs.apps) {
         # can be safely used as a subfolder name inside the backup directory.
         # e.g. "C:\Users\X\.gitconfig" -> "Users\X\.gitconfig"
         $safeRelPath = if ($pathType -eq "absolute") {
-            $relPath -replace '^[A-Za-z]:\\', '' `
-                     -replace '^\\', ''
+            $expanded = [System.Environment]::ExpandEnvironmentVariables($relPath)
+            $expanded -replace '^[A-Za-z]:\\', '' `
+                      -replace '^\\', ''
         } else {
             $relPath
         }

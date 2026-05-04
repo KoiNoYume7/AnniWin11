@@ -176,13 +176,18 @@ function Invoke-AppDetectionFlow {
     $newIgnores = @()
 
     Write-Host "For each app, choose a category:" -ForegroundColor Cyan
-    Write-Host "  [1] MainApps   [2] AdditionalApps   [3] Tools   [I] Ignore   [Enter] Skip"
+    Write-Host "  [1] MainApps   [2] AdditionalApps   [3] Tools   [I] Ignore   [Enter] Skip   [B] Back"
     Write-Host ""
 
-    foreach ($app in $detectedApps) {
-        # Skip already-ignored apps
+    # Index-based loop so [B] can step backwards
+    $appIndex = 0
+    while ($appIndex -lt $detectedApps.Count) {
+        $app = $detectedApps[$appIndex]
+
+        # Skip already-ignored apps (no prompt, just advance)
         if ($app.Id -and ($app.Id.ToLower() -in $ignoredIds)) {
             Write-AnniLog -Level DEBUG -Message "Skipped (ignored): $($app.Name)"
+            $appIndex++
             continue
         }
 
@@ -193,40 +198,100 @@ function Invoke-AppDetectionFlow {
             default   { "Yellow" }
         }
 
-        Write-Host "  $($app.Name)" -ForegroundColor White -NoNewline
+        $progress = "[$($appIndex + 1)/$($detectedApps.Count)]"
+        Write-Host "  $progress $($app.Name)" -ForegroundColor White -NoNewline
         Write-Host "  $idDisplay" -ForegroundColor Gray -NoNewline
         Write-Host "  [$($app.Source)]" -ForegroundColor $srcColour
 
-        $choice = Read-Host "  Category"
+        # Show current assignment if the user went back and this app was already categorised
+        $existingCategory = $null
+        foreach ($cat in $categories.Keys) {
+            if ($categories[$cat] | Where-Object { $_.name -eq $app.Name }) {
+                $existingCategory = $cat
+                break
+            }
+        }
+        if ($existingCategory) {
+            Write-Host "  (currently: $existingCategory)" -ForegroundColor DarkYellow
+        }
 
-        $entry = @{ name = $app.Name; source = $app.Source }
-        if ($app.Id) { $entry.id = $app.Id }
-        if ($app.Executable) { $entry.executable = $app.Executable }
-        if ($app.Notes -and $app.Source -eq "manual") { $entry.notes = $app.Notes }
+        $choice = Read-Host "  Category"
 
         switch ($choice) {
             '1' {
+                foreach ($cat in $categories.Keys) {
+                    $existing = $categories[$cat] | Where-Object { $_.name -eq $app.Name }
+                    if ($existing) { [void]$categories[$cat].Remove($existing) }
+                }
+                $entry = @{ name = $app.Name; source = $app.Source }
+                if ($app.Id) { $entry.id = $app.Id }
+                if ($app.Executable) { $entry.executable = $app.Executable }
+                if ($app.Notes -and $app.Source -eq "manual") { $entry.notes = $app.Notes }
                 [void]$categories.MainApps.Add($entry)
                 Write-AnniLog -Level DEBUG -Message "  -> MainApps: $($app.Name)"
+                $appIndex++
             }
             '2' {
+                foreach ($cat in $categories.Keys) {
+                    $existing = $categories[$cat] | Where-Object { $_.name -eq $app.Name }
+                    if ($existing) { [void]$categories[$cat].Remove($existing) }
+                }
+                $entry = @{ name = $app.Name; source = $app.Source }
+                if ($app.Id) { $entry.id = $app.Id }
+                if ($app.Executable) { $entry.executable = $app.Executable }
+                if ($app.Notes -and $app.Source -eq "manual") { $entry.notes = $app.Notes }
                 [void]$categories.AdditionalApps.Add($entry)
                 Write-AnniLog -Level DEBUG -Message "  -> AdditionalApps: $($app.Name)"
+                $appIndex++
             }
             '3' {
+                foreach ($cat in $categories.Keys) {
+                    $existing = $categories[$cat] | Where-Object { $_.name -eq $app.Name }
+                    if ($existing) { [void]$categories[$cat].Remove($existing) }
+                }
+                $entry = @{ name = $app.Name; source = $app.Source }
+                if ($app.Id) { $entry.id = $app.Id }
+                if ($app.Executable) { $entry.executable = $app.Executable }
+                if ($app.Notes -and $app.Source -eq "manual") { $entry.notes = $app.Notes }
                 [void]$categories.Tools.Add($entry)
                 Write-AnniLog -Level DEBUG -Message "  -> Tools: $($app.Name)"
+                $appIndex++
             }
             { $_ -in @('I', 'i') } {
+                foreach ($cat in $categories.Keys) {
+                    $existing = $categories[$cat] | Where-Object { $_.name -eq $app.Name }
+                    if ($existing) { [void]$categories[$cat].Remove($existing) }
+                }
                 if ($app.Id) {
                     $newIgnores += @{ id = $app.Id; name = $app.Name; ignored_at = (Get-Date -Format "yyyy-MM-dd") }
+                    Write-AnniLog -Level DEBUG -Message "  -> Ignored: $($app.Name)"
+                } else {
+                    Write-AnniLog -Level DEBUG -Message "  -> Skipped (no ID to ignore): $($app.Name)"
                 }
-                Write-AnniLog -Level DEBUG -Message "  -> Ignored: $($app.Name)"
+                $appIndex++
+            }
+            { $_ -in @('B', 'b') } {
+                if ($appIndex -gt 0) {
+                    $appIndex--
+                    # Also skip back over auto-ignored apps
+                    while ($appIndex -gt 0 -and $detectedApps[$appIndex].Id -and
+                           ($detectedApps[$appIndex].Id.ToLower() -in $ignoredIds)) {
+                        $appIndex--
+                    }
+                    Write-Host "  (going back)" -ForegroundColor DarkYellow
+                } else {
+                    Write-Host "  (already at the first app)" -ForegroundColor DarkYellow
+                }
+                # Do NOT increment -- re-present the app at the (now decremented) index
             }
             default {
+                # Enter / anything else = skip (no category assigned)
                 Write-AnniLog -Level DEBUG -Message "  -> Skipped: $($app.Name)"
+                $appIndex++
             }
         }
+
+        Write-Host ""
     }
 
     # --- Step 4: Write apps.json ---

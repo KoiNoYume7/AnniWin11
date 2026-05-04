@@ -7,6 +7,90 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.7.0] - 2026-05-05
+
+Bug-fix and polish release. Removed fragile thread-job parallelism, corrected
+first-time setup flow, added state reset and pre-reinstall validation.
+
+### Added
+
+- **`src/ResetState.ps1`** -- Selective state wipe with a menu-driven flow:
+  - Wipe generated configs (`apps.json`, `app_configs.json`, `settings.json`)
+  - Wipe project settings (`project_config.json`)
+  - Wipe backup pointer (`backup_store.json`)
+  - Wipe backup data (everything under the configured backup root)
+  - Nuclear option (everything) requiring typed `RESET` confirmation
+  - All destructive actions require explicit confirmation before proceeding
+  - Accessible from main menu as option `[R]`
+- **`test_suite.ps1`** -- Pre-reinstall validation suite. Checks:
+  - JSON syntax for all committed config files
+  - `apps.json` content integrity (MS Store source tags, broken IDs, terminal commands)
+  - PowerShell syntax for every script and module
+  - Module import cleanliness
+  - Backup manifest and directory presence (warns if backup never run)
+  - Config path resolution function correctness
+- **`tests/`** directory -- Helper validation scripts for JSONC parsing,
+  apps.json integrity, backup state checks, and fix verification.
+- **`src/Main.ps1`** -- `Invoke-ScriptInProcess` function using
+  `Start-ThreadJob` (with fallback to `Invoke-Script`) for in-process
+  script execution. Isolates `exit` calls to the thread so the main menu
+  is not killed by child script exits.
+- **`src/GenerateConfigs.ps1`** -- Back-navigation `[B]` during interactive
+  app categorisation. Replaced `foreach` with index-based `while` loop so
+  users can go back and change a previous app's category. Old assignment
+  is removed on recategorisation to prevent duplicates.
+- **`src/ScanConfigs.ps1`** -- Progress bar sub-status (`Write-Progress -Status`)
+  during Tier 3 (install directory) auto-confirm scanning, so users see
+  which app is being processed during long-running scans.
+- **`src/DriveSetup.ps1`** -- "Detecting drives, please wait..." user
+  message before the slow `Get-DriveList` call.
+
+### Changed
+
+- **`src/ScanApps.ps1`** -- Reverted `Invoke-AppScan` to sequential execution.
+  The `Start-ThreadJob` approach was fragile when `ScanApps.ps1` is
+  dot-sourced into another script (`GenerateConfigs.ps1`) because
+  dot-sourced function definitions are not reliably inherited by thread
+  jobs. The ~1s performance gain was not worth the scope fragility.
+- **`src/Main.ps1`** -- `Invoke-FirstTimeSetup` trimmed from 6 steps to the
+  correct 2-step flow per `docs/VISION.md`:
+  1. DriveSetup.ps1 -- select backup destination
+  2. GenerateConfigs.ps1 -- detect apps, discover configs, build config files
+  `WinSettings.ps1`, `InstallApps.ps1`, `Pin-TaskbarApp.ps1`, and
+  `RestoreConfigs.ps1` are no longer called during first-time setup.
+  They remain available as standalone main-menu options.
+- **`lib/Config.ps1`** -- `check_updates_on_backup` default changed from
+  `true` to `false`. Users now opt-in to the pre-backup update check
+  rather than having it run by default.
+- **`config/project_config_example.jsonc`** -- Updated `check_updates_on_backup`
+  default to `false` with improved explanatory comment.
+
+### Fixed
+
+- **`lib/Config.ps1`** -- JSONC comment stripper (`Invoke-StripJsoncComments`)
+  replaced broken 3-pass regex with a correct 2-pass approach:
+  1. Remove block comments (`/* ... */`) without touching `//` inside strings
+  2. Remove line comments (`//`) without touching `//` inside quoted strings
+  Previously, inline comments like `{ "key": "value" // comment }` were
+  not stripped, causing `ConvertFrom-Json` to fail.
+- **`src/ScanConfigs.ps1`** -- Performance: replaced 12x `Get-ChildItem -Recurse`
+  calls in Tier 3 fuzzy AppData scan with a single-pass .NET
+  `DirectoryInfo.EnumerateFiles` streaming enumeration. Also added a
+  folder cache parameter to `Find-ConfigInAppData` to avoid repeated
+  directory listings across multiple app scans.
+- **`src/ScanApps.ps1`** -- Performance: pre-built normalised winget list
+  (`wingetNormList`) for O(n) Strategy 2 fuzzy matching instead of O(n²)
+  re-computation of `NormKey` on every outer iteration.
+- **`src/RestoreConfigs.ps1`** -- Fixed silent path expansion bug where
+  environment variables in absolute backup paths were expanded **after**
+  path manipulation, causing incorrect relative path computation. Now
+  expands env vars before any path manipulation.
+- **`config/apps.json`** -- Fixed 4 MS Store entries that had `source: "manual"`
+  instead of `source: "msstore"` (`Windows Clock`, `Windows Media Player`,
+  `Scoop Extension for Command Palette`, `HyperX NGENUITY`).
+
+---
+
 ## [v0.6.0] - 2026-04-14
 
 GenerateConfigs rewrite. Full detection pipeline orchestration.

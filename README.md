@@ -10,37 +10,40 @@ minimal manual steps.
 
 ## Status
 
-**Alpha (v0.6.0)** -- this project is under active development.
+**Alpha (v0.7.0)** -- this project is under active development.
 See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-> **v0.6.0 highlights:** GenerateConfigs rewrite -- orchestrates full
-> detection pipeline (ScanApps + ScanConfigs) with interactive app
-> categorisation and config path discovery. Three new scripts in two
-> releases (v0.4.0-v0.5.0) power the engine.
-> See [CHANGELOG.md](CHANGELOG.md) for details.
+> **v0.7.0 highlights:** Bug-fix and polish release. Removed fragile
+> `Start-ThreadJob` parallelism in favour of reliable sequential scanning.
+> First-time setup trimmed to the correct 2-step flow (drive setup + config
+> generation). New `ResetState.ps1` for safe state wipe, `test_suite.ps1`
+> for pre-reinstall validation, and back-navigation `[B]` during app
+> categorisation. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 
 ## Features
 
-### Current (v0.1.x)
+### Current
 
 - **One-click setup** -- run `setup.bat` and follow the interactive menu
 - **App installation** -- install apps via winget, direct download, local installer, or terminal command
 - **Config backup and restore** -- snapshot and restore app configuration files across Windows reinstalls
 - **Windows settings** -- apply OS settings (theme, taskbar, Explorer, dev mode, etc.) from a config file
 - **Taskbar pinning** -- pin apps to the taskbar from config
-- **App detection** -- scan installed apps via `winget list`, add missing ones to your config
+- **Smart app detection** -- dual-scan engine (`winget list` + Start Menu shortcuts) with fuzzy deduplication
+- **Automatic config discovery** -- three-tier system finds where your apps store their settings
+- **Community lookup table** -- pre-verified config paths for 30+ common apps
 - **Drive setup** -- choose or create a backup partition interactively
-- **Fully configurable** -- no hardcoded values; everything driven by JSON config files
+- **Reset / wipe state** -- selectively delete generated configs, backup pointers, or all state
+- **Pre-reinstall validation** -- `test_suite.ps1` checks syntax, config integrity, and backup state
+- **Fully configurable** -- no hardcoded values; everything driven by JSON/JSONC config files
 
 ### Planned (see [ROADMAP.md](ROADMAP.md))
 
-- **Smart app detection** -- dual-scan engine (winget + Start Menu shortcuts)
-- **Automatic config discovery** -- three-tier system finds where your apps store their settings
-- **Community lookup table** -- pre-verified config paths for 30+ common apps
 - **Backup integrity** -- SHA256 checksums for every backed-up file
 - **Improved restore flow** -- manifest validation, warnings, and guided recovery
+- **WinSettings idempotency** -- skip settings that already match desired value
 
 For the full long-term architecture, see [docs/VISION.md](docs/VISION.md).
 
@@ -65,9 +68,21 @@ For the full long-term architecture, see [docs/VISION.md](docs/VISION.md).
    setup.bat
    ```
    This handles UAC elevation, installs PowerShell 7 if needed, and launches the
-   interactive menu. First-time setup walks you through everything.
+   interactive menu.
 
-3. Or generate config files manually:
+3. First-time setup (option `[1]`):
+   - **Step 1:** Select your backup destination drive.
+   - **Step 2:** Detect installed apps, discover their config paths, and build
+     `apps.json` + `app_configs.json`.
+   - After setup, run `[3] Backup configs now` to snapshot your current configs.
+
+4. Before reinstalling Windows, run the validation suite:
+   ```
+   pwsh -File test_suite.ps1
+   ```
+   This checks script syntax, config JSON validity, and backup integrity.
+
+5. Or generate config files manually:
    ```
    pwsh -File src\GenerateConfigs.ps1
    ```
@@ -81,6 +96,7 @@ For the full long-term architecture, see [docs/VISION.md](docs/VISION.md).
 ```
 AnniWin11/
   setup.bat                    Entry point (UAC elevation, PS7 bootstrap)
+  test_suite.ps1               Pre-reinstall validation suite
   .gitignore
   .gitattributes
   LICENSE
@@ -90,17 +106,18 @@ AnniWin11/
   ROADMAP.md
   src/
     Main.ps1                   Interactive menu orchestrator
-    InstallApps.ps1            App installer (winget/internet/local/terminal)
+    InstallApps.ps1            App installer (winget/internet/local/terminal/msstore)
     WinSettings.ps1            Windows settings applier (from config)
     Pin-TaskbarApp.ps1         Taskbar pinner (from config)
     BackupConfigs.ps1          Snapshot app configs to backup store
     RestoreConfigs.ps1         Restore configs after reinstall
-    DetectApps.ps1             Scan and add untracked apps
+    DetectApps.ps1             Scan and add untracked apps (legacy; ScanApps preferred)
     DriveSetup.ps1             Backup drive/partition selector
-    GenerateConfigs.ps1        Interactive config file generator
+    GenerateConfigs.ps1        Interactive config file generator (orchestrates ScanApps + ScanConfigs)
+    ScanApps.ps1               Dual-source app scanner (winget + Start Menu)
+    ScanConfigs.ps1            Three-tier config path discovery engine
+    ResetState.ps1             Selective state wipe (configs, backups, nuclear reset)
     BootstrapPwsh7.ps1         PowerShell 7 installer/relauncher
-    ScanApps.ps1               System app scanner (planned -- v0.4.0)
-    ScanConfigs.ps1            Config path discovery (planned -- v0.5.0)
   lib/
     AnniLog.psm1 / .psd1      Reusable logging module
     AnniLogo.psm1 / .psd1     Reusable ASCII art renderer
@@ -109,7 +126,9 @@ AnniWin11/
     apps_example.jsonc         Example app list template
     settings_example.jsonc     Example OS settings template
     app_configs_example.jsonc  Community lookup table -- app config paths for backup/restore
+    project_config_example.jsonc  Project-level settings template
     installers/                Local installer files (gitignored)
+  tests/                       Validation and helper scripts
   docs/
     ARCHITECTURE.md            Technical architecture overview
     VISION.md                  Long-term design vision and planned components
@@ -132,7 +151,7 @@ AnniWin11 uses two types of config files:
 | `app_configs.json` | Maps each app to its config file locations for backup/restore |
 | `backup_store.json` | Persists the user-chosen backup drive path |
 | `ignored_apps.json` | Apps permanently ignored during detection |
-| `project_config.json` | Project-level settings (log level, size limits, backup flags) |
+| `project_config.json` | Project-level settings (log level, size limits, auto-confirm, backup flags) |
 
 ---
 
@@ -167,6 +186,25 @@ AnniWin11 follows a security-first approach:
 - **DPAPI warnings** -- runtime warnings for browser data that cannot survive reinstalls
 
 See [docs/VISION.md](docs/VISION.md) for the full security requirements.
+
+---
+
+## Testing
+
+Before reinstalling Windows, run the built-in validation suite:
+
+```
+pwsh -File test_suite.ps1
+```
+
+Checks performed:
+- All `.ps1` and `.psm1` files parse without syntax errors
+- All committed config files are valid JSON
+- `apps.json` content checks (MS Store source correctness, broken IDs, terminal commands)
+- Backup manifest and directory integrity (if backup exists)
+- Config path resolution functions work correctly
+
+Warnings about missing backup files are expected if you have not run a backup yet.
 
 ---
 

@@ -245,7 +245,9 @@ function Show-ReinstallReminder {
 
 # ------- DRIVE SELECTION ------- #
 
+Write-Host "  Detecting drives, please wait..." -ForegroundColor Gray
 $drives = @(Get-DriveList)
+Write-Host ""
 
 if ($drives.Count -eq 0) {
     Write-AnniLog -Level ERROR -Message "No usable drives found. (Check Get-Volume, Get-Partition, and Get-PSDrive output.)"
