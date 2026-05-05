@@ -13,6 +13,7 @@
 		"files.exclude": {
 			"**/.git": false
 		},
-		"workbench.startupEditor": "readme"
+		"workbench.startupEditor": "readme",
+		"powershell.cwd": "AnniWin11"
 	}
 }

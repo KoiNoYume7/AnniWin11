@@ -15,7 +15,8 @@ $BackupStoreFile  = Get-ConfigPath -FileName "backup_store.json"
 $IgnoredAppsFile  = Get-ConfigPath -FileName "ignored_apps.json"
 
 # ------- INITIALISE LOGGING ------- #
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO"
+$ProjectConfig = Get-ProjectConfig
+Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
 
 Write-AnniLog -Level INFO -Message "AnniWin11 App Detection"
 Write-Host ""

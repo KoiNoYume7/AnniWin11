@@ -12,7 +12,8 @@ $SettingsConfig = Get-ConfigPath -FileName "settings.json"
 $LogFile        = Get-LogPath -FileName "settings.log"
 
 # ------- INITIALISE LOGGING ------- #
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO" -EnableStopwatch
+$ProjectConfig = Get-ProjectConfig
+Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level -EnableStopwatch
 
 # ------- READ SETTINGS ------- #
 if (-not (Test-Path $SettingsConfig)) {
@@ -126,32 +127,77 @@ if ($null -ne $Settings.taskbar) {
     }
 
     # Widgets
+    #
+    # Background: the obvious key (HKCU:\...\Explorer\Advanced\TaskbarDa)
+    # throws "unauthorized operation" on some Win11 builds when set via
+    # PowerShell's registry provider, even from an elevated session. The
+    # cause appears to be ACL hardening on recent cumulative updates --
+    # Set-ItemProperty on a pre-existing DWord fails, but reg.exe succeeds.
+    #
+    # Strategy:
+    #   1. Try reg.exe add (primary)  -- most reliable across builds.
+    #   2. Try New-ItemProperty/Set-ItemProperty (native PS fallback).
+    #   3. Try ShellFeedsTaskbarViewMode under Feeds (older key, last resort).
     if ($null -ne $tb.widgets) {
         $wValue = if ($tb.widgets) { 1 } else { 0 }
         Write-AnniLog -Level INFO -Message "Setting Widgets button to $($tb.widgets)"
+
+        $widgetsOk = $false
+
+        # --- Method 1: reg.exe add (primary) ---
         try {
-            # Primary: TaskbarDa controls the Widgets button visibility
-            if (-not (Test-Path $explorerAdvanced)) {
-                New-Item -Path $explorerAdvanced -Force | Out-Null
+            $regKey = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+            $regOut = & reg.exe add $regKey /v "TaskbarDa" /t REG_DWORD /d $wValue /f 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-AnniLog -Level SUCCESS -Message "Widgets button set to $($tb.widgets) (reg.exe)"
+                $widgetsOk = $true
+            } else {
+                Write-AnniLog -Level DEBUG -Message "reg.exe add failed (exit $LASTEXITCODE): $regOut"
             }
-            Set-ItemProperty -Path $explorerAdvanced -Name "TaskbarDa" -Value $wValue -Type DWord -Force
-            Write-AnniLog -Level SUCCESS -Message "Widgets button set to $($tb.widgets)"
         }
         catch {
-            Write-AnniLog -Level WARNING -Message "Could not set Widgets via TaskbarDa: $_"
-            # Fallback: ShellFeedsTaskbarViewMode (2 = hidden, 0 = shown)
+            Write-AnniLog -Level DEBUG -Message "reg.exe invocation threw: $_"
+        }
+
+        # --- Method 2: Native PowerShell registry provider ---
+        if (-not $widgetsOk) {
             try {
-                $feedsPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds"
-                $feedsValue = if ($tb.widgets) { 0 } else { 2 }
+                if (-not (Test-Path $explorerAdvanced)) {
+                    New-Item -Path $explorerAdvanced -Force | Out-Null
+                }
+                $existing = Get-ItemProperty -Path $explorerAdvanced -Name "TaskbarDa" -ErrorAction SilentlyContinue
+                if ($null -eq $existing) {
+                    New-ItemProperty -Path $explorerAdvanced -Name "TaskbarDa" -Value $wValue -PropertyType DWord -Force | Out-Null
+                } else {
+                    Set-ItemProperty -Path $explorerAdvanced -Name "TaskbarDa" -Value $wValue -Type DWord -Force
+                }
+                Write-AnniLog -Level SUCCESS -Message "Widgets button set to $($tb.widgets) (PS registry)"
+                $widgetsOk = $true
+            }
+            catch {
+                Write-AnniLog -Level DEBUG -Message "Native PS method failed: $_"
+            }
+        }
+
+        # --- Method 3: ShellFeedsTaskbarViewMode (older key) ---
+        if (-not $widgetsOk) {
+            try {
+                $feedsPath  = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds"
+                $feedsValue = if ($tb.widgets) { 0 } else { 2 }  # 2 = hidden, 0 = shown
                 if (-not (Test-Path $feedsPath)) {
                     New-Item -Path $feedsPath -Force | Out-Null
                 }
                 Set-ItemProperty -Path $feedsPath -Name "ShellFeedsTaskbarViewMode" -Value $feedsValue -Type DWord -Force
-                Write-AnniLog -Level SUCCESS -Message "Widgets button set via fallback key"
+                Write-AnniLog -Level SUCCESS -Message "Widgets button set via Feeds fallback"
+                $widgetsOk = $true
             }
             catch {
-                Write-AnniLog -Level WARNING -Message "Could not set Widgets button (both methods failed): $_"
+                Write-AnniLog -Level DEBUG -Message "Feeds fallback failed: $_"
             }
+        }
+
+        if (-not $widgetsOk) {
+            Write-AnniLog -Level WARNING -Message "Could not set Widgets button -- all three methods failed. Toggle manually in Taskbar settings."
         }
     }
 

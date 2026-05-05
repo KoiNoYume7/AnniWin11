@@ -40,7 +40,6 @@ setup.bat
 Main menu -> [1] First-time setup:
   Step 1: DriveSetup.ps1        -- select backup destination
   Step 2: GenerateConfigs.ps1   -- detect apps, discover configs, build all config files
-  Step 3: WinSettings.ps1       -- apply OS settings (includes taskbar pinning)
 ```
 
 `GenerateConfigs.ps1` is the orchestrator. It calls `ScanApps.ps1` and `ScanConfigs.ps1`
@@ -203,7 +202,8 @@ for the full timeline. In summary:
 | Detection | v0.4.0 | ScanApps (dual-scan engine) |
 | Discovery | v0.5.0 | ScanConfigs (three-tier engine) |
 | Orchestration | v0.6.0 | GenerateConfigs rewrite |
-| Backup/Restore | v0.7.0 | Checksums, config backup, new restore flow |
-| UX | v0.8.0 | New menu, smart backup, WinSettings improvements |
-| Security | v0.9.0 | Full security hardening |
+| Bug-fix / Polish | v0.7.0 | Thread-job removal, first-time setup fix, reset + validation |
+| Backup/Restore v2 | v0.8.0 | Checksums, config backup, new restore flow |
+| UX | v0.9.0 | New menu, smart backup, WinSettings improvements |
+| Security | v0.10.0 | Full security hardening |
 | Stable | v1.0.0 | First public stable release |

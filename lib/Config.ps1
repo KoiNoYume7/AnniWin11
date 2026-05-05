@@ -76,7 +76,7 @@ function Read-JsoncFile {
 
     $raw = Get-Content -Path $Path -Raw -Encoding UTF8
 
-    # Strip block comments (/* ... */)
+    # Pass 1: strip block comments (/* ... */) -- must run before line-comment pass
     $raw = [regex]::Replace(
         $raw,
         '/\*.*?\*/',
@@ -84,20 +84,17 @@ function Read-JsoncFile {
         [System.Text.RegularExpressions.RegexOptions]::Singleline
     )
 
-    # Strip line comments (// ...)
+    # Pass 2: strip line and inline comments (// ...) but NOT inside string literals.
+    # The alternation matches either a quoted string (captured, kept) or a // comment
+    # (not captured, replaced with ''). This correctly handles the last property in an
+    # object (no trailing comma) where the old lookbehind approach would silently fail.
     $raw = [regex]::Replace(
         $raw,
-        '^\s*//.*$',
-        '',
-        [System.Text.RegularExpressions.RegexOptions]::Multiline
-    )
-
-    # Also strip inline comments after values (e.g. "value", // comment)
-    $raw = [regex]::Replace(
-        $raw,
-        '(?<=,|{|\[)\s*//.*$',
-        '',
-        [System.Text.RegularExpressions.RegexOptions]::Multiline
+        '("(?:[^"\\]|\\.)*")|//[^\n]*',
+        [System.Text.RegularExpressions.MatchEvaluator]{
+            param($m)
+            if ($m.Value.StartsWith('"')) { $m.Value } else { '' }
+        }
     )
 
     try {
@@ -132,6 +129,75 @@ function Read-JsonFile {
     catch {
         throw "Failed to parse JSON file '$Path': $($_.Exception.Message)"
     }
+}
+
+# ------- Project Config ------- #
+
+# Cache so repeated calls in the same session don't re-read the file.
+$script:AnniProjectConfigCache = $null
+
+function Get-ProjectConfigDefaults {
+    <#
+    .SYNOPSIS
+        Returns the default project-level config as a hashtable.
+    .DESCRIPTION
+        These are the fall-through values used when project_config.json is
+        missing entirely or a specific key is absent. Keep this function as the
+        single source of truth for default values.
+    #>
+    [CmdletBinding()]
+    param()
+
+    return @{
+        max_config_folder_mb     = 500
+        auto_confirm_fuzzy       = $false
+        log_level                = "INFO"
+        check_updates_on_backup  = $false
+        suppress_c_drive_warning = $false
+    }
+}
+
+function Get-ProjectConfig {
+    <#
+    .SYNOPSIS
+        Loads config/project_config.json, merged over the built-in defaults.
+    .DESCRIPTION
+        Returns a PSCustomObject with all project-level settings. Missing file
+        or missing keys fall back to Get-ProjectConfigDefaults. The result is
+        cached for the current session; pass -Reload to force a re-read.
+    .PARAMETER Reload
+        Discard the cached value and re-read from disk.
+    #>
+    [CmdletBinding()]
+    param(
+        [switch]$Reload
+    )
+
+    if ($script:AnniProjectConfigCache -and -not $Reload) {
+        return $script:AnniProjectConfigCache
+    }
+
+    $defaults = Get-ProjectConfigDefaults
+    $merged   = @{}
+    foreach ($key in $defaults.Keys) { $merged[$key] = $defaults[$key] }
+
+    $configPath = Get-ConfigPath -FileName "project_config.json"
+    if (Test-Path $configPath) {
+        try {
+            $userConfig = Read-JsonFile -Path $configPath
+            foreach ($prop in $userConfig.PSObject.Properties) {
+                if ($merged.ContainsKey($prop.Name)) {
+                    $merged[$prop.Name] = $prop.Value
+                }
+            }
+        }
+        catch {
+            Write-Warning "Failed to read project_config.json, using defaults: $($_.Exception.Message)"
+        }
+    }
+
+    $script:AnniProjectConfigCache = [PSCustomObject]$merged
+    return $script:AnniProjectConfigCache
 }
 
 # ------- Path Token Resolver ------- #

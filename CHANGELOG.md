@@ -7,6 +7,351 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.7.0] - 2026-05-05
+
+Bug-fix and polish release. Removed fragile thread-job parallelism, corrected
+first-time setup flow, added state reset and pre-reinstall validation.
+
+### Added
+
+- **`src/ResetState.ps1`** -- Selective state wipe with a menu-driven flow:
+  - Wipe generated configs (`apps.json`, `app_configs.json`, `settings.json`)
+  - Wipe project settings (`project_config.json`)
+  - Wipe backup pointer (`backup_store.json`)
+  - Wipe backup data (everything under the configured backup root)
+  - Nuclear option (everything) requiring typed `RESET` confirmation
+  - All destructive actions require explicit confirmation before proceeding
+  - Accessible from main menu as option `[R]`
+- **`test_suite.ps1`** -- Pre-reinstall validation suite. Checks:
+  - JSON syntax for all committed config files
+  - `apps.json` content integrity (MS Store source tags, broken IDs, terminal commands)
+  - PowerShell syntax for every script and module
+  - Module import cleanliness
+  - Backup manifest and directory presence (warns if backup never run)
+  - Config path resolution function correctness
+- **`tests/`** directory -- Helper validation scripts for JSONC parsing,
+  apps.json integrity, backup state checks, and fix verification.
+- **`src/Main.ps1`** -- `Invoke-ScriptInProcess` function using
+  `Start-ThreadJob` (with fallback to `Invoke-Script`) for in-process
+  script execution. Isolates `exit` calls to the thread so the main menu
+  is not killed by child script exits.
+- **`src/GenerateConfigs.ps1`** -- Back-navigation `[B]` during interactive
+  app categorisation. Replaced `foreach` with index-based `while` loop so
+  users can go back and change a previous app's category. Old assignment
+  is removed on recategorisation to prevent duplicates.
+- **`src/ScanConfigs.ps1`** -- Progress bar sub-status (`Write-Progress -Status`)
+  during Tier 3 (install directory) auto-confirm scanning, so users see
+  which app is being processed during long-running scans.
+- **`src/DriveSetup.ps1`** -- "Detecting drives, please wait..." user
+  message before the slow `Get-DriveList` call.
+
+### Changed
+
+- **`src/ScanApps.ps1`** -- Reverted `Invoke-AppScan` to sequential execution.
+  The `Start-ThreadJob` approach was fragile when `ScanApps.ps1` is
+  dot-sourced into another script (`GenerateConfigs.ps1`) because
+  dot-sourced function definitions are not reliably inherited by thread
+  jobs. The ~1s performance gain was not worth the scope fragility.
+- **`src/Main.ps1`** -- `Invoke-FirstTimeSetup` trimmed from 6 steps to the
+  correct 2-step flow per `docs/VISION.md`:
+  1. DriveSetup.ps1 -- select backup destination
+  2. GenerateConfigs.ps1 -- detect apps, discover configs, build config files
+  `WinSettings.ps1`, `InstallApps.ps1`, `Pin-TaskbarApp.ps1`, and
+  `RestoreConfigs.ps1` are no longer called during first-time setup.
+  They remain available as standalone main-menu options.
+- **`lib/Config.ps1`** -- `check_updates_on_backup` default changed from
+  `true` to `false`. Users now opt-in to the pre-backup update check
+  rather than having it run by default.
+- **`config/project_config_example.jsonc`** -- Updated `check_updates_on_backup`
+  default to `false` with improved explanatory comment.
+
+### Fixed
+
+- **`lib/Config.ps1`** -- JSONC comment stripper (`Invoke-StripJsoncComments`)
+  replaced broken 3-pass regex with a correct 2-pass approach:
+  1. Remove block comments (`/* ... */`) without touching `//` inside strings
+  2. Remove line comments (`//`) without touching `//` inside quoted strings
+  Previously, inline comments like `{ "key": "value" // comment }` were
+  not stripped, causing `ConvertFrom-Json` to fail.
+- **`src/ScanConfigs.ps1`** -- Performance: replaced 12x `Get-ChildItem -Recurse`
+  calls in Tier 3 fuzzy AppData scan with a single-pass .NET
+  `DirectoryInfo.EnumerateFiles` streaming enumeration. Also added a
+  folder cache parameter to `Find-ConfigInAppData` to avoid repeated
+  directory listings across multiple app scans.
+- **`src/ScanApps.ps1`** -- Performance: pre-built normalised winget list
+  (`wingetNormList`) for O(n) Strategy 2 fuzzy matching instead of O(n²)
+  re-computation of `NormKey` on every outer iteration.
+- **`src/RestoreConfigs.ps1`** -- Fixed silent path expansion bug where
+  environment variables in absolute backup paths were expanded **after**
+  path manipulation, causing incorrect relative path computation. Now
+  expands env vars before any path manipulation.
+- **`config/apps.json`** -- Fixed 4 MS Store entries that had `source: "manual"`
+  instead of `source: "msstore"` (`Windows Clock`, `Windows Media Player`,
+  `Scoop Extension for Command Palette`, `HyperX NGENUITY`).
+
+### Additional fixes (code review `PROMPT.md`)
+
+- **`test_suite.ps1`** -- Removed hardcoded `d:\.src\AnniWin11` path;
+  now derives `$ProjectRoot` from `$PSScriptRoot`. Added `#Requires -Version 7.0`.
+- **`tests/verify_fixes.ps1`**, **`tests/check_msstore.ps1`**,
+  **`check_backup.ps1`** -- All hardcoded paths replaced with `$PSScriptRoot`
+  derivation. Removed stale source-code regression guard from `check_backup.ps1`.
+- **`src/ScanApps.ps1`** / **`src/ScanConfigs.ps1`** -- Fixed dot-source detection:
+  removed dead `'&'` check from `-notin @('.', '&')`, leaving `-ne '.'`.
+  Guarded `Initialize-AnniLog` so it only runs in standalone mode, preventing
+  double session headers when `GenerateConfigs.ps1` dot-sources these files.
+- **`src/Main.ps1`** -- `BackupConfigs.ps1` routed through `Invoke-Script`
+  (out-of-process) because it calls `Pause` (an interactive prompt) which
+  does not work reliably inside `Start-ThreadJob`. Added lowercase `'r'` case
+  for ResetState menu option. Documented `Invoke-ScriptInProcess` limitation
+  in a comment: **do not use for scripts that call `Read-Host`/`Pause`**.
+- **`src/ResetState.ps1`** -- `Invoke-WipeEverything` confirmation is now
+  case-insensitive (`reset`, `RESET`, etc. all accepted). Added explicit
+  `Write-Host` console feedback in `Remove-IfExists` so deletions are visible
+  even when log level filters SUCCESS messages.
+- **`src/ScanConfigs.ps1`** -- Added yellow console warning when Tier 3
+  (install directory) matches an app, alerting the user that the *entire*
+  install directory will be backed up and may hit size limits.
+- **`README.md`** -- Corrected `DetectApps.ps1` description from "legacy"
+  to "delta detection".
+- **`docs/ARCHITECTURE.md`** -- `ScanApps.ps1` and `ScanConfigs.ps1` marked
+  **Current** (was "Planned"). Detection pipeline and three-tier config
+  discovery headers updated from "planned" to "implemented".
+- **`docs/VISION.md`** -- Build phases table updated to match actual
+  shipped milestones (v0.7.0 = Bug-fix/Polish, v0.8.0 = Backup/Restore v2,
+  v0.9.0 = UX, v0.10.0 = Security).
+- **`src/Pin-TaskbarApp.ps1`** -- Added header comment documenting the
+  Win10-era `LayoutModification.xml` limitation on existing Win11 profiles.
+
+---
+
+## [v0.6.0] - 2026-04-14
+
+GenerateConfigs rewrite. Full detection pipeline orchestration.
+
+### Changed
+
+- **`src/GenerateConfigs.ps1`** -- Full rewrite. Now orchestrates the
+  ScanApps + ScanConfigs pipeline instead of copying example templates.
+  - **Full pipeline mode** (option 1): prerequisites check -> ScanApps
+    dual-source detection -> interactive app categorisation (MainApps /
+    AdditionalApps / Tools / Ignore) -> ScanConfigs three-tier discovery
+    -> write `apps.json` and `app_configs.json` -> settings wizard.
+  - **Independent steps**: app detection (option 2) and config discovery
+    (option 3) can be run separately via the menu. Config discovery
+    requires `apps.json` to exist.
+  - **Never silently overwrites** -- always prompts before overwriting
+    existing `apps.json`, `app_configs.json`, or `settings.json`.
+  - **Ignored apps** -- apps marked `[I]` during categorisation are saved
+    to `ignored_apps.json` and skipped in future scans.
+  - **Generation summary** -- displays OK/MISSING status for all config
+    files after the full pipeline completes.
+  - Settings config wizard (settings.json) carried over unchanged from
+    v0.1.0.
+
+---
+
+## [v0.5.0] - 2026-04-14
+
+Config Discovery. New three-tier config path discovery engine.
+
+### Added
+
+- **`src/ScanConfigs.ps1`** -- New config path discovery engine with three tiers:
+  - **Tier 1: Community lookup table** -- matches app names against
+    `app_configs_example.jsonc` (exact and normalised name matching).
+    Fast path for the 30+ apps already in the lookup table.
+  - **Tier 2: Fuzzy AppData scan** -- scans `%APPDATA%`, `%LOCALAPPDATA%`,
+    and `%PROGRAMDATA%` for folders matching the app name or publisher.
+    Four match strategies (exact, contains, publisher, substring) sorted
+    by confidence. Applies size filter (`max_config_folder_mb`), age
+    filter (skip folders older than 2 years), exclusion list (Temp, Cache,
+    node_modules, ShaderCache, etc.), and log-only folder detection.
+  - **Tier 3: Install directory scan** -- when Tiers 1-2 find nothing,
+    scans the app's install directory for config file patterns (`.json`,
+    `.ini`, `.cfg`, `.xml`, `.toml`, `.yaml`, `.db`, `.sqlite`, etc.),
+    skipping `bin/`, `lib/`, `node_modules/`, and similar subdirectories.
+  - **Interactive confirmation flow** -- fuzzy matches (Tier 2) prompt
+    the user with path, size, last-modified date, and match type.
+    Options: `[Y]` add, `[N]` skip, `[A]` auto-confirm remaining,
+    `[?]` open folder in Explorer. `[A]` sets a session-only flag
+    unless `auto_confirm_fuzzy` is true in `project_config.json`.
+  - **Security rules** -- never suggests folders containing private key
+    files (`.key`, `.pem`, `.pfx`, `.p12`, `.ppk`, `id_rsa*`,
+    `id_ed25519*`); never suggests browser profile root folders; never
+    follows symlinks/junctions; never suggests paths under `System32`,
+    `SysWOW64`, or the Windows directory. All skipped candidates logged
+    at DEBUG level for user audit.
+  - **Standalone mode** -- when run directly, dot-sources `ScanApps.ps1`
+    to get the app list, runs the full three-tier scan, and displays a
+    colour-coded summary (lookup/AppData/install-dir breakdown).
+  - **Dot-source mode** -- exports `Invoke-ConfigScan` for use by
+    `GenerateConfigs.ps1` and other orchestrators.
+
+---
+
+## [v0.4.0] - 2026-04-14
+
+Smart App Detection. New dual-source app scanner replacing the winget-only
+approach in `DetectApps.ps1`.
+
+### Added
+
+- **`src/ScanApps.ps1`** -- New dual-source system app scanner.
+  - **Source 1: winget list** -- regex parser carried over from
+    `DetectApps.ps1` (v0.1.1). Extracts Name, Id, Source, and Version.
+  - **Source 2: Start Menu shortcut scan** -- resolves `.lnk` files in
+    per-user and system-wide Start Menu Programs folders via WScript.Shell
+    COM object. Extracts executable path, install directory, and publisher
+    from file version info.
+  - **Merge & deduplication** -- three-strategy fuzzy name matching
+    (exact normalised, substring containment, executable-to-ID) merges
+    winget and Start Menu results. Winget entry is preferred when both
+    match; executable path from Start Menu is added to enrich it.
+  - **Filtering** -- excludes Windows system components (`System32`,
+    `SysWOW64`), Windows SDK/Kit tools (`Windows Kits\`), uninstaller
+    shortcuts, web URL shortcuts, broken shortcuts, non-executable
+    targets, and system shortcut groups (`Windows Tools`, `Accessories`,
+    etc.). Multi-arch duplicates (e.g. WinDbg arm/x64/x86) collapsed
+    to a single entry.
+  - **Unified output format** per app: `Name`, `Id`, `Source`, `Version`,
+    `Executable`, `InstallDir`, `Notes`.
+  - **Standalone mode** -- when run directly, prints a colour-coded
+    summary table and writes `config/scan_results.json` for inspection.
+  - **Dot-source mode** -- exports `Invoke-AppScan` function for use
+    by `GenerateConfigs.ps1` and other orchestrators.
+
+---
+
+## [v0.3.0] - 2026-04-14
+
+DriveSetup rewrite. All drive types now detected, safety warnings added.
+
+### Changed
+
+- **`src/DriveSetup.ps1`** -- Full rewrite of `Get-DriveList`. Now uses
+  `Get-Partition` + `Get-Volume` together instead of `Get-Volume` alone.
+  Discovers all drive types: Fixed (internal), Removable (USB/flash via
+  `Get-Disk` BusType check), and Network (mapped drives via `Get-PSDrive`
+  DisplayRoot detection). Each drive entry now carries a `DiskNumber` for
+  system-disk comparison and a `DriveType` for display.
+- **`src/DriveSetup.ps1`** -- `Show-DriveTable` now includes a **Type**
+  column showing Fixed, Removable, Network, or (unknown) for each drive.
+  Long labels (e.g. network UNC paths) are truncated to fit the table.
+- **`src/DriveSetup.ps1`** -- Partition creation flow now validates the
+  requested shrink size against `Get-PartitionSupportedSize` before
+  attempting the resize, preventing failures from over-shrinking.
+- **`src/DriveSetup.ps1`** -- `Get-PSDrive` fallback for Windows Sandbox
+  preserved and updated to emit the new object shape (DriveType, DiskNumber
+  fields) so all downstream code works uniformly.
+
+### Added
+
+- **`src/DriveSetup.ps1`** -- New `Get-SystemDiskNumber` helper. Resolves
+  the physical disk number hosting the C: partition, used to detect whether
+  a user-selected drive shares the same physical disk as Windows.
+- **`src/DriveSetup.ps1`** -- New `Test-IsSystemDisk` helper. Compares a
+  selected drive's DiskNumber against the system disk. Falls back to a
+  simple `C:` letter check when partition metadata is unavailable.
+- **`src/DriveSetup.ps1`** -- **C: drive / system disk warning.** When the
+  user selects any drive on the same physical disk as C:, a prominent red
+  warning is displayed explaining the backup will likely be lost during a
+  Windows reinstall. The user must confirm with `yes` to proceed. This
+  warning is also shown after partition creation (since the new partition
+  is necessarily on the same disk as C:). Suppressible via
+  `project_config.json` -> `suppress_c_drive_warning`.
+- **`src/DriveSetup.ps1`** -- **General reinstall reminder.** After every
+  drive selection (including non-system drives), a yellow reminder is
+  shown: "Make sure your backup destination is on a drive that will NOT
+  be wiped during reinstall."
+
+---
+
+## [v0.2.0] - 2026-04-10
+
+Stability & Foundation milestone. Project-level config infrastructure,
+fixes for both known issues from v0.1.1, and a `-Force` override for restore.
+Final manual clean-install verification in Windows Sandbox is tracked in the
+local `TESTING.md` checklist.
+
+### Added
+
+- **`lib/Config.ps1`** -- New `Get-ProjectConfig` and `Get-ProjectConfigDefaults`
+  functions. Loads `config/project_config.json` layered over built-in defaults
+  and caches the result for the session (pass `-Reload` to refresh). Supported
+  keys: `max_config_folder_mb`, `auto_confirm_fuzzy`, `log_level`,
+  `check_updates_on_backup`, `suppress_c_drive_warning`.
+- **`config/project_config_example.jsonc`** -- New commented template for the
+  project-level config. Copy to `config/project_config.json` and edit.
+  (`config/*.json` is already covered by the existing `.gitignore` rule.)
+- **`src/RestoreConfigs.ps1`** -- New `-Force` switch. Bypasses the
+  "destination newer than backup" safety check and overwrites unconditionally.
+  Skip messages now mention the flag. A warning is logged at startup when
+  `-Force` is active.
+- **`src/BackupConfigs.ps1`** -- Pre-backup DetectApps pass when
+  `project_config.check_updates_on_backup` is true (default). Lets users
+  categorise apps installed since the last backup before snapshotting.
+  Failures in the detect pass are logged as warnings and do not block
+  backup.
+- **`src/BackupConfigs.ps1`** -- Directory pre-flight size check honouring
+  `project_config.max_config_folder_mb` (default 500). Oversized folders
+  are skipped with a WARNING and appear in the failed summary as
+  `<app>/<path> (oversize)`. Single-file backup paths are not subject to
+  the limit.
+
+### Changed
+
+- **All scripts** (`Main.ps1`, `WinSettings.ps1`, `DriveSetup.ps1`,
+  `BackupConfigs.ps1`, `RestoreConfigs.ps1`, `InstallApps.ps1`,
+  `DetectApps.ps1`, `GenerateConfigs.ps1`, `Pin-TaskbarApp.ps1`) --
+  `Initialize-AnniLog` now reads the log level from
+  `project_config.log_level` instead of hardcoded `"INFO"`.
+
+### Fixed
+
+- **`src/WinSettings.ps1`** -- Widgets button (`TaskbarDa`) now uses a
+  three-tier approach: `reg.exe add` first (most reliable against the
+  "unauthorized operation" error seen on some Win11 builds), then the
+  PowerShell registry provider with `New-ItemProperty`/`Set-ItemProperty`,
+  then the older `ShellFeedsTaskbarViewMode` key as a last-resort fallback.
+  Only logs a warning if all three methods fail.
+- **`src/DriveSetup.ps1`** -- `Get-DriveList` now falls back to `Get-PSDrive`
+  when `Get-Volume` returns nothing or throws. Fixes drive detection in
+  Windows Sandbox, where the virtualised volume does not always report as
+  `DriveType = Fixed`. Result is wrapped in `@()` so `.Count` is always
+  safe even with a single-drive result. (Full DriveSetup rewrite is still
+  scoped for v0.3.0.)
+
+---
+
+## [v0.1.2] - 2026-04-04
+
+Documentation overhaul and public-audience config cleanup. No functional code changes.
+
+### Changed
+
+- **`config/apps_example.jsonc`** -- Rebuilt for a broad public audience. Removed
+  personal and niche apps, added widely useful defaults, cleaned up categories.
+- **`config/app_configs_example.jsonc`** -- Expanded into a community lookup table
+  covering 30+ common apps with verified config paths for backup and restore.
+- **`README.md`** -- Full rewrite as a public-facing landing page. Added features
+  list, quick start, project structure, config reference, backup/restore notes,
+  DPAPI limitation, and security section.
+- **`ROADMAP.md`** -- Full rewrite with incremental milestones from v0.2.0 through
+  v1.0.0 and a v2.0+ future-vision section.
+- **`docs/ARCHITECTURE.md`** -- Updated to describe planned components
+  (`ScanApps.ps1`, `ScanConfigs.ps1`) and the security model.
+- **`CONTRIBUTING.md`** -- Added sections on the community lookup table workflow
+  and security requirements for config path contributions.
+
+### Added
+
+- **`docs/VISION.md`** -- New public-facing long-term architecture and design
+  spec. Covers the dual-scan engine, three-tier config discovery, community
+  lookup table, and security requirements.
+
+---
+
 ## [v0.1.1] - 2026-04-04
 
 Patch release. Post-test bug fixes, new DetectApps features, and documentation updates.

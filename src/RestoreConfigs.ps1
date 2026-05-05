@@ -4,6 +4,16 @@
 # Run this AFTER InstallApps.ps1 has completed.
 # Requires -Version 7.0
 
+# ------- PARAMETERS ------- #
+[CmdletBinding()]
+param(
+    # Force overwrite even when the destination file is newer than the
+    # backup source. Without this switch, RestoreConfigs is non-destructive
+    # and will skip files whose destination has been modified since the
+    # snapshot was taken. Use with care.
+    [switch]$Force
+)
+
 # ------- DEPENDENCIES ------- #
 . "$PSScriptRoot\..\lib\Config.ps1"
 Import-Module "$PSScriptRoot\..\lib\AnniLog.psd1" -Force
@@ -14,9 +24,13 @@ $AppConfigsFile   = Get-ConfigPath -FileName "app_configs.json"
 $BackupStoreFile  = Get-ConfigPath -FileName "backup_store.json"
 
 # ------- INITIALISE LOGGING ------- #
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO" -EnableStopwatch
+$ProjectConfig = Get-ProjectConfig
+Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level -EnableStopwatch
 
 Write-AnniLog -Level INFO -Message "AnniWin11 Config Restore"
+if ($Force) {
+    Write-AnniLog -Level WARNING -Message "-Force enabled: destination files will be overwritten even if newer than backup."
+}
 Write-Host ""
 
 # ------- DPAPI WARNING ------- #
@@ -109,8 +123,9 @@ foreach ($app in $appConfigs.apps) {
         # can be safely used as a subfolder name inside the backup directory.
         # e.g. "C:\Users\X\.gitconfig" -> "Users\X\.gitconfig"
         $safeRelPath = if ($pathType -eq "absolute") {
-            $relPath -replace '^[A-Za-z]:\\', '' `
-                     -replace '^\\', ''
+            $expanded = [System.Environment]::ExpandEnvironmentVariables($relPath)
+            $expanded -replace '^[A-Za-z]:\\', '' `
+                      -replace '^\\', ''
         } else {
             $relPath
         }
@@ -135,12 +150,13 @@ foreach ($app in $appConfigs.apps) {
             continue
         }
 
-        # Non-destructive check: skip if destination is newer than backup
-        if ((Test-Path $destPath) -and (Test-Path $sourcePath -PathType Leaf)) {
+        # Non-destructive check: skip if destination is newer than backup.
+        # -Force bypasses this safety check and overwrites unconditionally.
+        if (-not $Force -and (Test-Path $destPath) -and (Test-Path $sourcePath -PathType Leaf)) {
             $destItem   = Get-Item $destPath -ErrorAction SilentlyContinue
             $sourceItem = Get-Item $sourcePath -ErrorAction SilentlyContinue
             if ($destItem -and $sourceItem -and $destItem.LastWriteTime -gt $sourceItem.LastWriteTime) {
-                Write-AnniLog -Level INFO -Message "[$appName] Destination newer than backup, skipping: $relPath"
+                Write-AnniLog -Level INFO -Message "[$appName] Destination newer than backup, skipping: $relPath (use -Force to override)"
                 continue
             }
         }

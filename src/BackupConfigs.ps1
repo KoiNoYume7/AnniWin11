@@ -14,10 +14,31 @@ $AppConfigsFile   = Get-ConfigPath -FileName "app_configs.json"
 $BackupStoreFile  = Get-ConfigPath -FileName "backup_store.json"
 
 # ------- INITIALISE LOGGING ------- #
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel "INFO" -EnableStopwatch
+$ProjectConfig = Get-ProjectConfig
+Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level -EnableStopwatch
 
 Write-AnniLog -Level INFO -Message "AnniWin11 Config Backup"
 Write-Host ""
+
+# ------- CHECK FOR NEW APPS BEFORE BACKUP ------- #
+# project_config: check_updates_on_backup
+# When enabled, run DetectApps first so any apps installed since the last
+# backup get categorised before we snapshot their config files.
+if ($ProjectConfig.check_updates_on_backup) {
+    $detectScript = Join-Path $PSScriptRoot "DetectApps.ps1"
+    if (Test-Path $detectScript) {
+        Write-AnniLog -Level INFO -Message "check_updates_on_backup enabled -- running DetectApps first..."
+        try {
+            & $detectScript
+        }
+        catch {
+            Write-AnniLog -Level WARNING -Message "DetectApps pre-pass failed: $_"
+        }
+        Write-Host ""
+    } else {
+        Write-AnniLog -Level DEBUG -Message "DetectApps.ps1 not found at $detectScript, skipping pre-pass."
+    }
+}
 
 # ------- VALIDATE PREREQUISITES ------- #
 
@@ -118,6 +139,30 @@ foreach ($app in $appConfigs.apps) {
 
         if ($destDir -and -not (Test-Path $destDir)) {
             New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+        }
+
+        # project_config: max_config_folder_mb
+        # Pre-flight size check for directories. If the source folder is
+        # larger than the configured limit, skip it and log a warning. This
+        # guards against accidentally snapshotting huge caches, node_modules,
+        # or Electron user-data directories.
+        if (Test-Path $sourcePath -PathType Container) {
+            $maxBytes = [int64]$ProjectConfig.max_config_folder_mb * 1MB
+            try {
+                $folderSize = (Get-ChildItem -Path $sourcePath -Recurse -Force -ErrorAction SilentlyContinue |
+                    Measure-Object -Property Length -Sum).Sum
+                if ($null -eq $folderSize) { $folderSize = 0 }
+
+                if ($folderSize -gt $maxBytes) {
+                    $sizeMb = [math]::Round($folderSize / 1MB, 1)
+                    Write-AnniLog -Level WARNING -Message "[$appName] Skipping '$relPath' -- size ${sizeMb} MB exceeds max_config_folder_mb ($($ProjectConfig.max_config_folder_mb) MB)"
+                    $failed += "$appName/$relPath (oversize)"
+                    continue
+                }
+            }
+            catch {
+                Write-AnniLog -Level DEBUG -Message "[$appName] Could not measure size of '$relPath': $_"
+            }
         }
 
         # Copy files
