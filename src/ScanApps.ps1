@@ -19,8 +19,11 @@ Import-Module "$PSScriptRoot\..\lib\AnniLog.psd1" -Force
 $LogFile = Get-LogPath -FileName "scan_apps.log"
 
 # ------- INITIALISE LOGGING ------- #
-$ProjectConfig = Get-ProjectConfig
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
+# Only initialise when standalone; when dot-sourced the caller already owns the session.
+if ($MyInvocation.InvocationName -ne '.') {
+    $ProjectConfig = Get-ProjectConfig
+    Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
+}
 
 # ======================================================================
 # SOURCE 1: WINGET LIST
@@ -478,8 +481,8 @@ function Invoke-AppScan {
 # ======================================================================
 
 # If run directly (not dot-sourced), execute the scan and display results.
-# Detection: when dot-sourced, $MyInvocation.InvocationName is '.' or '&'.
-if ($MyInvocation.InvocationName -notin @('.', '&')) {
+# Detection: when dot-sourced, $MyInvocation.InvocationName is '.'.
+if ($MyInvocation.InvocationName -ne '.') {
     Write-AnniLog -Level INFO -Message "AnniWin11 App Scanner (standalone mode)"
     Write-Host ""
 

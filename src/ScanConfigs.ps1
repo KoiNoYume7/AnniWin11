@@ -17,8 +17,11 @@ Import-Module "$PSScriptRoot\..\lib\AnniLog.psd1" -Force
 $LogFile = Get-LogPath -FileName "scan_configs.log"
 
 # ------- INITIALISE LOGGING ------- #
-$ProjectConfig = Get-ProjectConfig
-Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
+# Only initialise when standalone; when dot-sourced the caller already owns the session.
+if ($MyInvocation.InvocationName -ne '.') {
+    $ProjectConfig = Get-ProjectConfig
+    Initialize-AnniLog -LogFilePath $LogFile -LogLevel $ProjectConfig.log_level
+}
 
 # ------- CONSTANTS ------- #
 
@@ -643,6 +646,9 @@ function Invoke-ConfigScan {
                 Write-AnniLog -Level DEBUG -Message "[Tier3] Found $($installCandidates.Count) config file(s) in install dir for '$appName': $fileList$truncated"
 
                 $backupPaths = @(@{ type = "absolute"; path = $installDir })
+                Write-Host "    [WARN] $appName -- Tier 3 matched install directory '$installDir'" -ForegroundColor Yellow
+                Write-Host "           This will back up the ENTIRE install dir (may be large)." -ForegroundColor DarkYellow
+                Write-Host "           Review in app_configs.json before running backup." -ForegroundColor DarkYellow
                 $results += [PSCustomObject]@{
                     name         = $appName
                     backup_paths = $backupPaths
@@ -668,7 +674,7 @@ function Invoke-ConfigScan {
 # STANDALONE EXECUTION
 # ======================================================================
 
-if ($MyInvocation.InvocationName -notin @('.', '&')) {
+if ($MyInvocation.InvocationName -ne '.') {
     Write-AnniLog -Level INFO -Message "AnniWin11 Config Scanner (standalone mode)"
     Write-Host ""
 

@@ -94,8 +94,8 @@ Dot-sourced helper (not a module). Provides:
 | `DriveSetup.ps1` | Current | Interactive drive selector, writes `backup_store.json` |
 | `GenerateConfigs.ps1` | Current | Interactive config file generator from example templates |
 | `BootstrapPwsh7.ps1` | Current | Checks for / installs PowerShell 7, relaunches script under pwsh |
-| `ScanApps.ps1` | Planned (v0.4.0) | Dual-scan app detection (winget + Start Menu) |
-| `ScanConfigs.ps1` | Planned (v0.5.0) | Three-tier config path discovery |
+| `ScanApps.ps1` | Current (v0.4.0) | Dual-scan app detection (winget + Start Menu) |
+| `ScanConfigs.ps1` | Current (v0.5.0) | Three-tier config path discovery |
 
 ---
 
@@ -109,7 +109,7 @@ Post-reinstall: InstallApps.ps1    -> install software
 
 ---
 
-## Detection Pipeline (planned -- v0.4.0+)
+## Detection Pipeline (implemented -- v0.4.0+)
 
 ```
 ScanApps.ps1
@@ -135,7 +135,7 @@ Write app_configs.json
 
 ---
 
-## Three-Tier Config Discovery (planned -- v0.5.0)
+## Three-Tier Config Discovery (implemented -- v0.5.0)
 
 **Tier 1: Community lookup table**
 - Check `app_configs_example.jsonc` for a known mapping by app name

@@ -111,7 +111,7 @@ AnniWin11/
     Pin-TaskbarApp.ps1         Taskbar pinner (from config)
     BackupConfigs.ps1          Snapshot app configs to backup store
     RestoreConfigs.ps1         Restore configs after reinstall
-    DetectApps.ps1             Scan and add untracked apps (legacy; ScanApps preferred)
+    DetectApps.ps1             Scan and add untracked apps (delta detection: compares winget output against apps.json)
     DriveSetup.ps1             Backup drive/partition selector
     GenerateConfigs.ps1        Interactive config file generator (orchestrates ScanApps + ScanConfigs)
     ScanApps.ps1               Dual-source app scanner (winget + Start Menu)

@@ -87,6 +87,11 @@ function Invoke-ScriptInProcess {
     # In-process via Start-ThreadJob: no cold-start overhead, output streams live.
     # exit calls in the child script terminate only the thread, not Main.ps1.
     # Falls back to Invoke-Script if Start-ThreadJob is unavailable.
+    #
+    # DO NOT use this for scripts that call Read-Host: Read-Host does not
+    # work reliably inside a thread job when the parent host is an interactive
+    # console (the prompt shows but the thread cannot acquire console input).
+    # Use Invoke-Script (out-of-process) for any interactive script.
     param(
         [string]$ScriptName,
         [string]$Description
@@ -152,14 +157,15 @@ while ($running) {
     switch ($choice) {
         '1' { Invoke-FirstTimeSetup }
         '2' { Invoke-ScriptInProcess -ScriptName "RestoreConfigs.ps1" -Description "Restore configs" }
-        '3' { Invoke-ScriptInProcess -ScriptName "BackupConfigs.ps1" -Description "Backup configs" }
-        '4' { Invoke-ScriptInProcess -ScriptName "DetectApps.ps1" -Description "Detect and add apps" }
+        '3' { Invoke-Script -ScriptName "BackupConfigs.ps1" -Description "Backup configs" }
+        '4' { Invoke-Script -ScriptName "DetectApps.ps1" -Description "Detect and add apps" }
         '5' { Invoke-ScriptInProcess -ScriptName "WinSettings.ps1" -Description "Apply Windows settings" }
         '6' { Invoke-ScriptInProcess -ScriptName "Pin-TaskbarApp.ps1" -Description "Pin taskbar apps" }
         '7' { Invoke-Script -ScriptName "InstallApps.ps1" -Description "Install apps" }
         '8' { Invoke-Script -ScriptName "GenerateConfigs.ps1" -Description "Generate configs" }
         '9' { Invoke-Script -ScriptName "DriveSetup.ps1" -Description "Drive setup" }
-        'R' { Invoke-ScriptInProcess -ScriptName "ResetState.ps1" -Description "Reset / wipe state" }
+        'R' { Invoke-Script -ScriptName "ResetState.ps1" -Description "Reset / wipe state" }
+        'r' { Invoke-Script -ScriptName "ResetState.ps1" -Description "Reset / wipe state" }
         '0' {
             Write-AnniLog -Level INFO -Message "Exiting AnniWin11."
             $running = $false

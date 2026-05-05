@@ -3,6 +3,11 @@
 # Pins apps to the taskbar via LayoutModification.xml.
 # Reads taskbar_apps from config/settings.json when run standalone.
 # Requires -Version 7.0
+#
+# NOTE: LayoutModification.xml is a Win10-era provisioning mechanism. On existing
+# Win11 user profiles the taskbar state is stored as a binary blob and the XML
+# method may have no visible effect. It works best during initial account setup
+# or after creating a new local user. See docs/VISION.md for future native API plans.
 
 # ------- DEPENDENCIES ------- #
 . "$PSScriptRoot\..\lib\Config.ps1"

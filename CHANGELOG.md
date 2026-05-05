@@ -89,6 +89,40 @@ first-time setup flow, added state reset and pre-reinstall validation.
   instead of `source: "msstore"` (`Windows Clock`, `Windows Media Player`,
   `Scoop Extension for Command Palette`, `HyperX NGENUITY`).
 
+### Additional fixes (code review `PROMPT.md`)
+
+- **`test_suite.ps1`** -- Removed hardcoded `d:\.src\AnniWin11` path;
+  now derives `$ProjectRoot` from `$PSScriptRoot`. Added `#Requires -Version 7.0`.
+- **`tests/verify_fixes.ps1`**, **`tests/check_msstore.ps1`**,
+  **`check_backup.ps1`** -- All hardcoded paths replaced with `$PSScriptRoot`
+  derivation. Removed stale source-code regression guard from `check_backup.ps1`.
+- **`src/ScanApps.ps1`** / **`src/ScanConfigs.ps1`** -- Fixed dot-source detection:
+  removed dead `'&'` check from `-notin @('.', '&')`, leaving `-ne '.'`.
+  Guarded `Initialize-AnniLog` so it only runs in standalone mode, preventing
+  double session headers when `GenerateConfigs.ps1` dot-sources these files.
+- **`src/Main.ps1`** -- `BackupConfigs.ps1` routed through `Invoke-Script`
+  (out-of-process) because it calls `Pause` (an interactive prompt) which
+  does not work reliably inside `Start-ThreadJob`. Added lowercase `'r'` case
+  for ResetState menu option. Documented `Invoke-ScriptInProcess` limitation
+  in a comment: **do not use for scripts that call `Read-Host`/`Pause`**.
+- **`src/ResetState.ps1`** -- `Invoke-WipeEverything` confirmation is now
+  case-insensitive (`reset`, `RESET`, etc. all accepted). Added explicit
+  `Write-Host` console feedback in `Remove-IfExists` so deletions are visible
+  even when log level filters SUCCESS messages.
+- **`src/ScanConfigs.ps1`** -- Added yellow console warning when Tier 3
+  (install directory) matches an app, alerting the user that the *entire*
+  install directory will be backed up and may hit size limits.
+- **`README.md`** -- Corrected `DetectApps.ps1` description from "legacy"
+  to "delta detection".
+- **`docs/ARCHITECTURE.md`** -- `ScanApps.ps1` and `ScanConfigs.ps1` marked
+  **Current** (was "Planned"). Detection pipeline and three-tier config
+  discovery headers updated from "planned" to "implemented".
+- **`docs/VISION.md`** -- Build phases table updated to match actual
+  shipped milestones (v0.7.0 = Bug-fix/Polish, v0.8.0 = Backup/Restore v2,
+  v0.9.0 = UX, v0.10.0 = Security).
+- **`src/Pin-TaskbarApp.ps1`** -- Added header comment documenting the
+  Win10-era `LayoutModification.xml` limitation on existing Win11 profiles.
+
 ---
 
 ## [v0.6.0] - 2026-04-14

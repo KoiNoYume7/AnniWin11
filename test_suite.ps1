@@ -1,7 +1,8 @@
+#Requires -Version 7.0
 # AnniWin11 Test Suite
 # Run before reinstall to validate configs, scripts, modules, and file system
 
-$ProjectRoot = "d:\.src\AnniWin11"
+$ProjectRoot = $PSScriptRoot
 $pass = 0
 $fail = 0
 $warn = 0

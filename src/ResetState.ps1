@@ -46,9 +46,11 @@ function Remove-IfExists {
         } else {
             Remove-Item -Path $Path -Force
         }
+        Write-Host "    Deleted: $Label" -ForegroundColor Green
         Write-AnniLog -Level SUCCESS -Message "Deleted: $Label"
     }
     catch {
+        Write-Host "    FAILED: $Label -- $_" -ForegroundColor Red
         Write-AnniLog -Level ERROR -Message "Failed to delete ${Label}: $_"
     }
 }
@@ -181,7 +183,7 @@ function Invoke-WipeEverything {
     Write-Host "  Type RESET to confirm, or press Enter to cancel: " -ForegroundColor Red -NoNewline
     $answer = Read-Host
 
-    if ($answer -cne 'RESET') {
+    if ($answer.ToUpper() -ne 'RESET') {
         Write-AnniLog -Level INFO -Message "Nuclear wipe cancelled (input was '$answer')."
         Write-Host ""
         Write-Host "  Cancelled." -ForegroundColor Gray
@@ -189,6 +191,8 @@ function Invoke-WipeEverything {
     }
 
     Write-AnniLog -Level WARNING -Message "Nuclear wipe confirmed. Proceeding..."
+    Write-Host ""
+    Write-Host "  Deleting..." -ForegroundColor Yellow
 
     # 1. Backup data first
     if ($BackupRoot) {
@@ -209,7 +213,7 @@ function Invoke-WipeEverything {
     Remove-IfExists -Path (Get-ConfigPath -FileName "project_config.json") -Label "config\project_config.json"
 
     Write-Host ""
-    Write-AnniLog -Level SUCCESS -Message "Nuclear wipe complete."
+    Write-Host "  Nuclear wipe complete." -ForegroundColor Green
 }
 
 # ------- MENU ------- #
