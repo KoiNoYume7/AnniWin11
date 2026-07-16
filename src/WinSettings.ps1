@@ -39,6 +39,7 @@ if ($Settings.device_name) {
     try {
         Rename-Computer -NewName $Settings.device_name -ErrorAction Stop
         Write-AnniLog -Level SUCCESS -Message "Device renamed to '$($Settings.device_name)'"
+        Write-AnniLog -Level WARNING -Message "Device rename takes effect after a reboot."
     }
     catch {
         Write-AnniLog -Level WARNING -Message "Failed to rename device: $_"

@@ -156,7 +156,8 @@ while ($running) {
 
     switch ($choice) {
         '1' { Invoke-FirstTimeSetup }
-        '2' { Invoke-ScriptInProcess -ScriptName "RestoreConfigs.ps1" -Description "Restore configs" }
+        # RestoreConfigs is interactive (Read-Host confirmations) -> must run out-of-process.
+        '2' { Invoke-Script -ScriptName "RestoreConfigs.ps1" -Description "Restore configs" }
         '3' { Invoke-Script -ScriptName "BackupConfigs.ps1" -Description "Backup configs" }
         '4' { Invoke-Script -ScriptName "DetectApps.ps1" -Description "Detect and add apps" }
         '5' { Invoke-ScriptInProcess -ScriptName "WinSettings.ps1" -Description "Apply Windows settings" }

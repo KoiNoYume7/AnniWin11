@@ -10,15 +10,16 @@ minimal manual steps.
 
 ## Status
 
-**Alpha (v0.7.0)** -- this project is under active development.
+**Alpha (v0.8.0)** -- this project is under active development.
 See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for version history.
 
-> **v0.7.0 highlights:** Bug-fix and polish release. Removed fragile
-> `Start-ThreadJob` parallelism in favour of reliable sequential scanning.
-> First-time setup trimmed to the correct 2-step flow (drive setup + config
-> generation). New `ResetState.ps1` for safe state wipe, `test_suite.ps1`
-> for pre-reinstall validation, and back-navigation `[B]` during app
-> categorisation. See [CHANGELOG.md](CHANGELOG.md) for details.
+> **v0.8.0 highlights:** Backup & Restore v2. Every backed-up file now gets
+> a SHA256 checksum recorded in the backup manifest, and restore verifies
+> them all before writing anything. The backup store also carries the
+> project's own config files, so a fresh clone re-hydrates itself after a
+> reinstall. New guided restore flow: manifest validation, restore plan
+> summary, explicit confirmation, and post-restore offers to run
+> InstallApps and WinSettings. See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 
@@ -36,14 +37,17 @@ See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for
 - **Community lookup table** -- pre-verified config paths for 30+ common apps
 - **Drive setup** -- choose or create a backup partition interactively
 - **Reset / wipe state** -- selectively delete generated configs, backup pointers, or all state
-- **Pre-reinstall validation** -- `test_suite.ps1` checks syntax, config integrity, and backup state
+- **Pre-reinstall validation** -- `test_suite.ps1` checks syntax, config integrity, backup state, and checksums
+- **Backup integrity** -- SHA256 checksum for every backed-up file, verified on restore
+- **Guided restore flow** -- manifest validation, restore plan summary, explicit confirmation
+- **Self-hydrating backups** -- the backup store carries the project's config files, so a fresh clone restores itself
 - **Fully configurable** -- no hardcoded values; everything driven by JSON/JSONC config files
 
 ### Planned (see [ROADMAP.md](ROADMAP.md))
 
-- **Backup integrity** -- SHA256 checksums for every backed-up file
-- **Improved restore flow** -- manifest validation, warnings, and guided recovery
+- **Menu & UX polish** -- restructured main menu, smarter backup flow
 - **WinSettings idempotency** -- skip settings that already match desired value
+- **Security hardening** -- symlink checks, path traversal prevention, full audit
 
 For the full long-term architecture, see [docs/VISION.md](docs/VISION.md).
 
@@ -202,6 +206,7 @@ Checks performed:
 - All committed config files are valid JSON
 - `apps.json` content checks (MS Store source correctness, broken IDs, terminal commands)
 - Backup manifest and directory integrity (if backup exists)
+- SHA256 checksum verification of every file in the backup store (v0.8.0+ backups)
 - Config path resolution functions work correctly
 
 Warnings about missing backup files are expected if you have not run a backup yet.

@@ -66,6 +66,49 @@ if (-not $backupRoot -or -not (Test-Path $backupRoot)) {
     exit 1
 }
 
+# ------- DRIVE SAFETY CHECKS ------- #
+
+# Free-space check: a backup that fills the drive mid-run leaves a partial
+# snapshot behind, so warn early when headroom is below 20 %.
+# Both checks are skipped gracefully for UNC/network paths, where
+# Split-Path -Qualifier and Get-Partition are unavailable.
+$backupDriveLetter = $null
+try {
+    $backupDriveLetter = (Split-Path -Qualifier $backupRoot -ErrorAction Stop).TrimEnd(':')
+    $driveInfo  = Get-PSDrive -Name $backupDriveLetter -ErrorAction Stop
+    $totalBytes = $driveInfo.Free + $driveInfo.Used
+    if ($totalBytes -gt 0) {
+        $freePct = [math]::Round(($driveInfo.Free / $totalBytes) * 100, 1)
+        $freeGb  = [math]::Round($driveInfo.Free / 1GB, 1)
+        if ($freePct -lt 20) {
+            Write-AnniLog -Level WARNING -Message "Backup drive ${backupDriveLetter}: has only $freePct % free ($freeGb GB). Consider freeing space before backing up."
+        } else {
+            Write-AnniLog -Level DEBUG -Message "Backup drive ${backupDriveLetter}: $freePct % free ($freeGb GB)."
+        }
+    }
+}
+catch {
+    Write-AnniLog -Level DEBUG -Message "Could not determine free space for '$backupRoot': $($_.Exception.Message)"
+}
+
+# Physical-disk check: a backup on C: (or on the same physical disk as C:)
+# does not survive a full disk wipe during reinstall.
+try {
+    if ($backupDriveLetter -eq 'C') {
+        Write-AnniLog -Level WARNING -Message "Backup destination is on C:. A reinstall that wipes C: will destroy this backup!"
+    }
+    elseif ($backupDriveLetter) {
+        $backupPart = Get-Partition -DriveLetter $backupDriveLetter -ErrorAction Stop
+        $systemPart = Get-Partition -DriveLetter C -ErrorAction Stop
+        if ($backupPart.DiskNumber -eq $systemPart.DiskNumber) {
+            Write-AnniLog -Level WARNING -Message "Backup drive ${backupDriveLetter}: shares a physical disk with C:. A full disk wipe during reinstall will destroy this backup."
+        }
+    }
+}
+catch {
+    Write-AnniLog -Level DEBUG -Message "Could not compare physical disks: $($_.Exception.Message)"
+}
+
 $appConfigsBackupDir = Join-Path $backupRoot "app_configs"
 if (-not (Test-Path $appConfigsBackupDir)) {
     New-Item -ItemType Directory -Path $appConfigsBackupDir -Force | Out-Null
@@ -228,9 +271,83 @@ catch {
     Write-AnniLog -Level WARNING -Message "Failed to run winget export: $_"
 }
 
+# ------- BACK UP PROJECT CONFIG FILES ------- #
+
+# Snapshot the project's own config files so a fresh clone can be
+# re-hydrated from the backup store after reinstall without having to
+# re-run GenerateConfigs. backup_store.json is deliberately excluded --
+# it is a machine-local pointer that DriveSetup recreates.
+Write-Host ""
+Write-AnniLog -Level INFO -Message "Backing up project config files..."
+
+$configBackupDir = Join-Path $backupRoot "config"
+if (-not (Test-Path $configBackupDir)) {
+    New-Item -ItemType Directory -Path $configBackupDir -Force | Out-Null
+}
+
+$projectConfigFiles = @("apps.json", "settings.json", "app_configs.json", "ignored_apps.json", "project_config.json")
+$configsBackedUp = @()
+foreach ($cfgName in $projectConfigFiles) {
+    $cfgPath = Get-ConfigPath -FileName $cfgName
+    if (Test-Path $cfgPath) {
+        try {
+            Copy-Item -Path $cfgPath -Destination (Join-Path $configBackupDir $cfgName) -Force
+            $configsBackedUp += $cfgName
+            Write-AnniLog -Level SUCCESS -Message "Backed up config: $cfgName"
+        }
+        catch {
+            Write-AnniLog -Level ERROR -Message "Failed to back up config '$cfgName': $_"
+            $failed += "config/$cfgName"
+        }
+    } else {
+        Write-AnniLog -Level DEBUG -Message "Config file not present, skipping: $cfgName"
+    }
+}
+
+# ------- SHA256 CHECKSUMS ------- #
+
+# Hash every file in the backup store so RestoreConfigs and test_suite can
+# detect corruption or tampering before anything is written back to disk.
+Write-Host ""
+Write-AnniLog -Level INFO -Message "Computing SHA256 checksums..."
+
+$checksumRoots = @($appConfigsBackupDir, $configBackupDir)
+if (Test-Path $wingetExportPath) { $checksumRoots += $wingetExportPath }
+
+$fileHashes = [System.Collections.Generic.List[object]]::new()
+$totalBackupBytes = [int64]0
+$backupRootTrimmed = $backupRoot.TrimEnd('\')
+
+foreach ($chkRoot in $checksumRoots) {
+    $items = if (Test-Path $chkRoot -PathType Container) {
+        Get-ChildItem -Path $chkRoot -Recurse -File -Force -ErrorAction SilentlyContinue
+    } else {
+        Get-Item $chkRoot -ErrorAction SilentlyContinue
+    }
+
+    foreach ($item in $items) {
+        try {
+            $hash = Get-FileHash -Path $item.FullName -Algorithm SHA256 -ErrorAction Stop
+            $relToRoot = $item.FullName.Substring($backupRootTrimmed.Length).TrimStart('\')
+            $fileHashes.Add([ordered]@{
+                path   = $relToRoot
+                sha256 = $hash.Hash
+                size   = $item.Length
+            })
+            $totalBackupBytes += $item.Length
+        }
+        catch {
+            Write-AnniLog -Level WARNING -Message "Could not hash '$($item.FullName)': $($_.Exception.Message)"
+        }
+    }
+}
+
+Write-AnniLog -Level SUCCESS -Message "Checksummed $($fileHashes.Count) file(s) ($([math]::Round($totalBackupBytes / 1MB, 1)) MB)."
+
 # ------- WRITE MANIFEST ------- #
 
 $manifest = @{
+    manifest_version = 2
     timestamp    = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
     backup_root  = $backupRoot
     backed_up    = $backedUp
@@ -238,6 +355,9 @@ $manifest = @{
     failed       = $failed
     app_count    = $appConfigs.apps.Count
     winget_export = if (Test-Path $wingetExportPath) { $wingetExportPath } else { $null }
+    config_files = $configsBackedUp
+    total_bytes  = $totalBackupBytes
+    files        = $fileHashes
 }
 
 $manifestPath = Join-Path $backupRoot "backup_manifest.json"
@@ -255,8 +375,10 @@ Write-Host ""
 Write-Host ("-" * 50)
 Write-AnniLog -Level INFO -Message "Backup Summary:"
 Write-AnniLog -Level INFO -Message "  Backed up: $($backedUp.Count) app(s)"
+Write-AnniLog -Level INFO -Message "  Configs:   $($configsBackedUp.Count) project config file(s)"
 Write-AnniLog -Level INFO -Message "  Skipped:   $($skipped.Count) app(s)"
 Write-AnniLog -Level INFO -Message "  Failed:    $($failed.Count) item(s)"
+Write-AnniLog -Level INFO -Message "  Checksums: $($fileHashes.Count) file(s), $([math]::Round($totalBackupBytes / 1MB, 1)) MB total"
 Write-Host ("-" * 50)
 
 if ($failed.Count -gt 0) {

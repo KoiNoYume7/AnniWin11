@@ -1,19 +1,25 @@
 {
 	"folders": [
 		{
-			"name": "AnniWin11",
+			"name": "AnniWin11 (main)",
 			"path": "."
 		},
 		{
-			"name": "AnniWin11 (Backup)",
+			"name": "AnniWin11 (backup)",
 			"path": "../AnniWin11.bak"
 		}
 	],
+	"extensions": {
+		"recommendations": [
+			"starlitxiling.bak-syntax-highlighter"
+		]
+	},
 	"settings": {
 		"files.exclude": {
 			"**/.git": false
 		},
 		"workbench.startupEditor": "readme",
-		"powershell.cwd": "AnniWin11"
+		"workbench.editor.restoreViewState": true,
+		"powershell.cwd": "AnniWin11 (main)"
 	}
 }

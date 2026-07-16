@@ -267,6 +267,52 @@ if (Test-Path $backupStorePath) {
     }
 }
 
+# ------- 8. BACKUP INTEGRITY (SHA256) ------- #
+
+Section "Backup Integrity (SHA256 Checksums)"
+
+$integrityManifestPath = $null
+if (Test-Path $backupStorePath) {
+    $store = Get-Content $backupStorePath -Raw | ConvertFrom-Json
+    $backupRoot = $store.backup_root
+    if ($backupRoot -and (Test-Path $backupRoot)) {
+        $candidate = Join-Path $backupRoot "backup_manifest.json"
+        if (Test-Path $candidate) { $integrityManifestPath = $candidate }
+    }
+}
+
+if ($integrityManifestPath) {
+    $manifest = Get-Content $integrityManifestPath -Raw | ConvertFrom-Json
+    if ($manifest.manifest_version -ge 2 -and $manifest.files) {
+        $mismatched = 0
+        $missing    = 0
+        foreach ($entry in $manifest.files) {
+            $filePath = Join-Path $backupRoot $entry.path
+            if (-not (Test-Path $filePath -PathType Leaf)) {
+                $missing++
+                continue
+            }
+            $actual = (Get-FileHash -Path $filePath -Algorithm SHA256 -ErrorAction SilentlyContinue).Hash
+            if ($actual -ne $entry.sha256) {
+                Fail "Checksum mismatch: $($entry.path)"
+                $mismatched++
+            }
+        }
+        if ($missing -gt 0) {
+            Warn "$missing manifest file(s) missing from backup store"
+        }
+        if ($mismatched -eq 0 -and $missing -eq 0) {
+            Pass "All $($manifest.files.Count) checksummed file(s) verified"
+        } elseif ($mismatched -eq 0) {
+            Pass "All present files match their checksums ($($manifest.files.Count - $missing) verified)"
+        }
+    } else {
+        Warn "Manifest has no checksums (pre-v0.8.0 backup) -- re-run backup to enable integrity verification"
+    }
+} else {
+    Warn "No backup manifest available -- skipping checksum verification"
+}
+
 # ------- SUMMARY ------- #
 
 Write-Host "`n$('=' * 50)" -ForegroundColor White

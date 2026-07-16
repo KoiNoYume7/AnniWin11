@@ -172,6 +172,10 @@ function Install-App {
             }
         }
 
+        'manual' {
+            Write-AnniLog -Level INFO -Message "'$name' requires manual installation -- skipping automation."
+        }
+
         default {
             Write-AnniLog -Level ERROR -Message "'$name' has unknown source: $source"
         }

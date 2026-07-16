@@ -7,6 +7,56 @@ This project is in alpha -- all v0.x.0 releases are pre-release.
 
 ---
 
+## [v0.8.0] - 2026-07-16
+
+Backup & Restore v2. The backup store now carries SHA256 checksums and the
+project's own config files, and the restore flow validates everything and
+asks before writing -- making the full backup -> reinstall -> restore cycle
+trustworthy end to end.
+
+### Added
+
+- **`src/BackupConfigs.ps1`** -- Backup integrity and safety:
+  - SHA256 checksum for every backed-up file, recorded in
+    `backup_manifest.json` (`manifest_version: 2`, with per-file `path`,
+    `sha256`, `size` and a `total_bytes` sum)
+  - Project config files (`apps.json`, `settings.json`, `app_configs.json`,
+    `ignored_apps.json`, `project_config.json`) are snapshotted to
+    `<backup_root>\config` so a fresh clone can be re-hydrated from the
+    backup store after reinstall. `backup_store.json` is deliberately
+    excluded (machine-local pointer, recreated by DriveSetup)
+  - Free-space check on the backup drive -- warns when less than 20 % free
+  - Physical-disk check -- warns when the backup destination is on C: or
+    shares a physical disk with C: (a disk wipe would destroy the backup)
+- **`src/RestoreConfigs.ps1`** -- Guided, validated restore flow:
+  - Manifest validation up front; warns on missing/unreadable/pre-v0.8.0
+    manifests and asks before continuing without one
+  - Re-hydrates missing project config files from the backup store before
+    they are needed (existing local files are never overwritten)
+  - Verifies every SHA256 checksum in the manifest before restoring; warns
+    on mismatch and asks before continuing with a possibly corrupted backup
+  - Restore plan summary (backup timestamp, size, app count, overwrite
+    mode) with explicit confirmation before anything is written
+  - Offers to run `InstallApps.ps1` and `WinSettings.ps1` after a
+    successful restore when `apps.json` / `settings.json` are present
+  - New `-NoConfirm` switch for automation: skips all prompts, restores
+    missing configs automatically
+- **`test_suite.ps1`** -- New "Backup Integrity (SHA256 Checksums)" section
+  that verifies every checksummed file in the backup store against the
+  manifest before a reinstall.
+
+### Changed
+
+- **`src/Main.ps1`** -- `RestoreConfigs.ps1` is now routed out-of-process
+  (`Invoke-Script`) because the new restore flow is interactive; `Read-Host`
+  is unreliable inside thread jobs.
+- **`src/InstallApps.ps1`** -- Apps with source `manual` are now logged and
+  skipped cleanly instead of hitting the unknown-source error branch.
+- **`src/WinSettings.ps1`** -- Device rename now logs a reminder that the
+  new name takes effect after a reboot.
+
+---
+
 ## [v0.7.0] - 2026-05-05
 
 Bug-fix and polish release. Removed fragile thread-job parallelism, corrected

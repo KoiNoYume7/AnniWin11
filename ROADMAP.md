@@ -168,17 +168,17 @@ ScanConfigs and ScanApps.
 
 ---
 
-## v0.8.0 -- Backup & Restore v2 (planned)
+## v0.8.0 -- Backup & Restore v2 (completed 2026-07-16)
 
 Focus: improved backup/restore flows with integrity checks and config file backup.
 
-- [ ] Back up config files (`apps.json`, `settings.json`, `app_configs.json`) alongside app data
-- [ ] Check available space before backup, warn if < 20 % free
-- [ ] SHA256 checksum for each backed-up file in `backup_manifest.json`
-- [ ] Verify checksums on restore, warn on mismatch
-- [ ] New restore flow: validate manifest, show summary, prominent warnings, confirm
-- [ ] Offer to run InstallApps and WinSettings from backup if configs present
-- [ ] Warn if backup destination is on C: or same physical disk
+- [x] Back up config files (`apps.json`, `settings.json`, `app_configs.json`) alongside app data
+- [x] Check available space before backup, warn if < 20 % free
+- [x] SHA256 checksum for each backed-up file in `backup_manifest.json`
+- [x] Verify checksums on restore, warn on mismatch
+- [x] New restore flow: validate manifest, show summary, prominent warnings, confirm
+- [x] Offer to run InstallApps and WinSettings from backup if configs present
+- [x] Warn if backup destination is on C: or same physical disk
 
 ---
 
