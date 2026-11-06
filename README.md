@@ -13,6 +13,12 @@ minimal manual steps.
 **Alpha (v0.8.0)** -- this project is under active development.
 See [ROADMAP.md](ROADMAP.md) for milestones and [CHANGELOG.md](CHANGELOG.md) for version history.
 
+> **In development on `dev`:** a v2 orchestrator lives alongside the classic
+> menu suite -- declarative `profile/*.psd1` manifests, idempotent phases, a
+> preflight risk table, `state.json` resume, and reboot-resume. Entry point:
+> `setup-v2.bat` (or `pwsh -File Invoke-Setup.ps1 -DryRun` to preview). The
+> menu suite described below remains the stable path.
+
 > **v0.8.0 highlights:** Backup & Restore v2. Every backed-up file now gets
 > a SHA256 checksum recorded in the backup manifest, and restore verifies
 > them all before writing anything. The backup store also carries the
@@ -99,7 +105,10 @@ For the full long-term architecture, see [docs/VISION.md](docs/VISION.md).
 
 ```
 AnniWin11/
-  setup.bat                    Entry point (UAC elevation, PS7 bootstrap)
+  setup.bat                    v1 entry point (UAC elevation, PS7 bootstrap, Main.ps1)
+  setup-v2.bat                 v2 entry point (elevation -> bootstrap.ps1)
+  bootstrap.ps1                v2 PS 5.1 bootstrap (winget + PS7 checks -> orchestrator)
+  Invoke-Setup.ps1             v2 orchestrator (preflight plan -> confirm -> run phases)
   test_suite.ps1               Pre-reinstall validation suite
   .gitignore
   .gitattributes
@@ -108,6 +117,7 @@ AnniWin11/
   CHANGELOG.md
   CONTRIBUTING.md
   ROADMAP.md
+  AGENTS.md                    Operating manual (run/verify commands, conventions)
   src/
     Main.ps1                   Interactive menu orchestrator
     InstallApps.ps1            App installer (winget/internet/local/terminal/msstore)
@@ -126,6 +136,25 @@ AnniWin11/
     AnniLog.psm1 / .psd1      Reusable logging module
     AnniLogo.psm1 / .psd1     Reusable ASCII art renderer
     Config.ps1                 Centralised path resolution and JSON/JSONC reader
+    Log.ps1                    (v2) Slim logging + transcript (PS 5.1 and 7)
+    State.ps1                  (v2) state.json resume tracking
+    Preflight.ps1              (v2) Plan/risk table + confirmation gate
+    Elevation.ps1              (v2) Admin check + reboot-resume scheduled task
+    Winget.ps1                 (v2) Idempotent winget install helpers
+  modules/
+    Phase.Apps.ps1             (v2) Idempotent winget installs from apps.psd1
+    Phase.WinSettings.ps1      (v2) Registry OS settings (writes only when different)
+    Phase.Debloat.ps1          (v2) Remove listed AppX packages + deprovision
+    Phase.DevEnv.ps1           (v2) git/SSH/VS Code/runtimes/Terminal/pwsh profile
+    Phase.Accounts.ps1         (v2) Optional local account provisioning
+    Phase.Backup.ps1           (v2) Export configured state (winget, manifests, registry)
+  profile/
+    setup.psd1                 (v2) Top-level manifest: phase toggles/order, log level
+    apps.psd1                  (v2) winget package list by category
+    settings.psd1              (v2) Desired Windows settings (human-friendly values)
+    debloat.psd1               (v2) AppX removal list
+    devenv.psd1                (v2) Dev environment manifest
+    accounts.psd1              (v2) Optional local account manifest
   config/
     apps_example.jsonc         Example app list template
     settings_example.jsonc     Example OS settings template

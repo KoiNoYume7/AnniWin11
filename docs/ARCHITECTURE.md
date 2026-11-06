@@ -14,23 +14,37 @@ The project is evolving from a personal setup script into a general-purpose publ
 
 ## Entry Point
 
+Two generations of entry points coexist (v2 is in development on `dev`):
+
 ```
-setup.bat
-  -> UAC elevation check
-  -> PowerShell 7 bootstrap (install if missing)
-  -> Launch src/Main.ps1 via pwsh
+v1 (stable):  setup.bat
+                -> UAC elevation check
+                -> PowerShell 7 bootstrap (install if missing)
+                -> Launch src/Main.ps1 via pwsh   (interactive menu)
+
+v2 (dev):     setup-v2.bat
+                -> UAC elevation check
+                -> bootstrap.ps1 (Windows PowerShell 5.1: admin + winget
+                   checks, installs/locates pwsh 7)
+                -> Invoke-Setup.ps1 via pwsh     (phase orchestrator)
 ```
 
 ## Directory Layout
 
 ```
 AnniWin11/
-  setup.bat              Entry point (batch, handles elevation)
-  src/                   User-facing scripts (orchestration, features)
-  lib/                   Reusable modules and helpers (project-agnostic where possible)
-  config/                Configuration files (examples committed, generated files gitignored)
+  setup.bat              v1 entry point (batch, handles elevation)
+  setup-v2.bat           v2 entry point (batch, elevation -> bootstrap.ps1)
+  bootstrap.ps1          (v2) PS 5.1 bootstrap: winget + PS7 -> Invoke-Setup.ps1
+  Invoke-Setup.ps1       (v2) Phase orchestrator
+  src/                   v1 user-facing scripts (orchestration, features)
+  lib/                   Reusable modules and helpers (v1 modules + v2 dot-sourced libs)
+  modules/               (v2) Phase.*.ps1 phase modules
+  profile/               (v2) Declarative *.psd1 manifests (source of truth for a run)
+  config/                v1 configuration files (examples committed, generated gitignored)
   docs/                  Documentation (architecture, vision)
   logs/                  Runtime log files (gitignored)
+  state.json             (v2 runtime) Resume state, gitignored
 ```
 
 ---
@@ -96,6 +110,83 @@ Dot-sourced helper (not a module). Provides:
 | `BootstrapPwsh7.ps1` | Current | Checks for / installs PowerShell 7, relaunches script under pwsh |
 | `ScanApps.ps1` | Current (v0.4.0) | Dual-scan app detection (winget + Start Menu) |
 | `ScanConfigs.ps1` | Current (v0.5.0) | Three-tier config path discovery |
+
+---
+
+## v2 Orchestrator (in development -- `dev` branch)
+
+A second-generation, declarative entry path. Where v1 is an interactive menu
+of imperative scripts, v2 is a plan-then-execute pipeline: each phase describes
+what it *would* do, the user confirms once, then enabled phases run in order.
+
+### Phase module contract (`modules/Phase.<Name>.ps1`)
+
+Each phase module exports two functions:
+
+| Function | Signature | Returns / effect |
+|----------|-----------|------------------|
+| `Get-<Name>Plan` | `-Manifest <obj>` | `@{ Title; Items[]; Risk }` for the preflight table |
+| `Invoke-<Name>Phase` | `-Manifest <obj> [-DryRun]` | Executes; throws on hard failure |
+
+`Invoke-Setup.ps1` registers phases in an ordered `$registry` (name -> manifest
+path + plan/run function names), loads `profile/setup.psd1`, and runs each
+phase whose `Phases.<Name> = $true` and which appears in `PhaseOrder`.
+
+### Manifests (`profile/*.psd1`)
+
+PowerShell data files are the declarative source of truth for a run:
+
+| File | Consumed by | Contents |
+|------|-------------|----------|
+| `setup.psd1` | Orchestrator + Backup phase | `Phases` toggles, `PhaseOrder`, `MinLogLevel`, `Backup.LocalPath`/Remote |
+| `apps.psd1` | Phase.Apps | winget IDs by category (string or `@{Id;Args}`) |
+| `settings.psd1` | Phase.WinSettings | Human-friendly OS settings (`$null` = leave untouched) |
+| `debloat.psd1` | Phase.Debloat | AppX name patterns to remove + deprovision |
+| `devenv.psd1` | Phase.DevEnv | git identity/defaults, SSH key, VS Code extensions, runtimes, Terminal settings, pwsh profile |
+| `accounts.psd1` | Phase.Accounts | Optional local account (e.g. school standard account) |
+
+Unlike v1's `config/*.json` convention, the manifests are **committed** -- they
+are the reviewable source of truth, and `Phase.Backup` snapshots them into
+each backup.
+
+### v2 libs (`lib/*.ps1`, dot-sourced, PS 5.1 + 7 compatible)
+
+| File | Role |
+|------|------|
+| `Log.ps1` | `Initialize-Log` / `Write-Log` / `Write-Section` / `Stop-Log`; leveled console + file (+ optional transcript) |
+| `State.ps1` | `state.json` at repo root: `Get/ Save-SetupState`, `Test-/Set-PhaseComplete`, `Clear-SetupState` (gitignored) |
+| `Preflight.ps1` | `Show-PlanSection` (risk items in yellow), `Confirm-Preflight` gate, `Read-YesNo` (`abort` throws `AnniAbort`) |
+| `Elevation.ps1` | `Test-Admin`, `Register-/Unregister-ResumeTask` (logon scheduled task `AnniWin11-Resume`), `Request-Reboot` |
+| `Winget.ps1` | `Test-WingetInstalled`, `Install-WingetApp` (idempotent; returns `installed/present/failed/dryrun`) |
+
+### Run model
+
+```
+Invoke-Setup.ps1
+  1. Load libs + all modules/Phase.*.ps1
+  2. Read profile/setup.psd1 -> enabled phases (toggled AND in PhaseOrder)
+  3. Preflight: call each phase's Get-*Plan -> render risk table
+  4. One Confirm-Preflight gate (auto-confirmed by -DryRun / -Yes / -Resume)
+  5. Run pending phases; Set-PhaseComplete persists state.json after each
+  6. Clean finish: Unregister-ResumeTask + Clear-SetupState
+```
+
+- **Idempotent**: every phase skips work already done (winget presence checks,
+  registry read-before-write, existing user/SSH key detection).
+- **Resumable**: `state.json` survives crashes/reboots; `Request-Reboot`
+  registers a logon task that relaunches with `-Resume`.
+- **Dry-run**: `-DryRun` previews every action end-to-end with no writes.
+- **Scope note**: v2 is currently a *personal* provisioner (dev environment,
+  school account isolation, RPi4 backup target) rather than the general-purpose
+  tool described by the v1 docs. Convergence between the two generations is an
+  open design question tracked in `.local/cleanup-plan.md` (Phase E).
+
+### Manual run
+
+```powershell
+setup-v2.bat                  # elevated entry (forwards args)
+pwsh -File Invoke-Setup.ps1 -DryRun   # preview only, no changes
+```
 
 ---
 

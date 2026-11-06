@@ -182,6 +182,21 @@ Focus: improved backup/restore flows with integrity checks and config file backu
 
 ---
 
+## In development -- v2 orchestrator (on `dev`, unversioned)
+
+A second-generation entry path now exists alongside the menu suite:
+`setup-v2.bat` -> `bootstrap.ps1` -> `Invoke-Setup.ps1` runs declarative
+`profile/*.psd1` manifests through `modules/Phase.*.ps1`, with idempotent
+operations, a preflight risk table + single confirmation, `state.json` resume,
+and scheduled-task reboot-resume. See `docs/ARCHITECTURE.md` -> "v2 Orchestrator".
+
+It already implements two items slated for v0.9.0 (idempotent WinSettings;
+a phase-registry run model). Open decision: land it inside v0.9.0, give it its
+own milestone, or keep it as a personal-profile track. Convergence between the
+v1 menu suite and v2 phases is scoped separately after the current cleanup.
+
+---
+
 ## v0.9.0 -- Menu & UX Polish (planned)
 
 Focus: updated menu structure, smarter backup flow, WinSettings improvements.

@@ -190,6 +190,20 @@ the fewer fuzzy matches users need to confirm manually.
 
 ---
 
+## Personal Provisioning Profile (v2)
+
+A second-generation architecture is in development on `dev` that applies the
+same "declarative config, confirm once, run idempotently" philosophy to
+*personal machine provisioning* rather than generic post-install tooling:
+`profile/*.psd1` manifests describe desired apps, OS settings, debloat, dev
+environment, and optional local accounts; `modules/Phase.*.ps1` executes them
+with `state.json` resume and a preflight risk table. Whether this stays a
+personal profile, merges into the public tool, or replaces the interactive
+menu model is an open question -- the two generations currently coexist.
+See `ARCHITECTURE.md` -> "v2 Orchestrator".
+
+---
+
 ## Build Phases
 
 The vision is implemented incrementally across milestones. See [ROADMAP.md](../ROADMAP.md)
