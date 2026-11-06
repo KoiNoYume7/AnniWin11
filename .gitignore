@@ -15,3 +15,9 @@ TODO.md
 PROMPT.md
 TESTING.md
 check_backup.ps1
+
+# Local working notes (plans, scratch)
+.local/
+
+# v2 orchestrator runtime state (resume tracking, not source)
+state.json
