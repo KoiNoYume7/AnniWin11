@@ -5,8 +5,8 @@
     # =======================================================================
 
     Git = @{
-        UserName  = ''   # TODO: your git author name, e.g. 'Martin Giner'
-        UserEmail = ''   # TODO: your git email (a GitHub noreply is a good idea)
+        UserName  = 'KoiNoYume7'
+        UserEmail = 'koinoyume7@gmail.com'
         Defaults  = @{
             'init.defaultBranch' = 'main'
             'pull.rebase'        = 'false'
@@ -18,7 +18,7 @@
     Ssh = @{
         Generate = $true
         Type     = 'ed25519'
-        Comment  = ''    # blank -> uses Git.UserEmail
+        Comment  = 'koinoyume7@gmail.com'    # blank -> uses Git.UserEmail
         # The public key path is printed at the end so you can add it to GitHub.
     }
 

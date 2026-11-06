@@ -19,5 +19,10 @@
         # 'Microsoft.BingNews'
         # 'Microsoft.BingWeather'
         # 'Clipchamp.Clipchamp'
+
+        # --- Laptop candidates (seen in winget list 2026-11-06) --------------
+        # Acer OEM apps; uncomment to remove for current user + deprovision.
+        # 'AcerIncorporated.AcerPurifiedVoiceConsoleR*'   # Acer Purified Voice Console
+        # 'ULICTekInc.AcerSense*'                        # AcerSense
     )
 }

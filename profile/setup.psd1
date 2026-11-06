@@ -22,7 +22,9 @@
 
     # Where the Backup phase writes an export of the configured state.
     Backup = @{
-        LocalPath = 'D:\AnniWin11-Backup'
+        # USB stick (Samsung Type-C, label KNY-21) — unified with v1's
+        # backup_store.json target so both generations write to one place.
+        LocalPath = 'D:\AnniWin11Backup'
 
         # Forward-looking: push the export to the RPi4 over Tailscale later.
         # Not implemented against the server yet -- leave Enabled = $false.

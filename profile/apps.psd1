@@ -11,6 +11,8 @@
     #
     #  NOTE: Teams / Office / anything school-mandated is intentionally NOT
     #  here -- those belong on the separate school account, not this profile.
+    #
+    #  Laptop set: populated from `winget list` on 2026-11-06 (laptop scan).
     # =======================================================================
 
     Categories = @{
@@ -24,20 +26,33 @@
             'Microsoft.PowerShell'
             'Microsoft.WindowsTerminal'
             'Microsoft.VisualStudioCode'
+            'Kitware.CMake'
+            'OpenJS.NodeJS.LTS'
+            'Python.Python.3.13'
+            'Microsoft.DotNet.SDK.8'
+            'Microsoft.VisualStudio.2022.BuildTools'
+            'CognitionAI.DevinDesktop'
+            'Anthropic.Claude'
         )
 
-        # --- Fill these in. Examples left commented as a starting point. -----
         Utilities = @(
+            'Tailscale.Tailscale'
             # '7zip.7zip'
             # 'Microsoft.PowerToys'
         )
 
         Media = @(
+            'Spotify.Spotify'
+            'ElementLabs.LMStudio'
             # 'VideoLAN.VLC'
         )
 
         Comms = @(
-            # 'Discord.Discord'
+            'Discord.Discord'
+        )
+
+        Gaming = @(
+            'Valve.Steam'
         )
     }
 }
